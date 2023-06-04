@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  mongo_for_express:
+    image: "bitnami/mongodb:latest"
+    restart: unless-stopped
+    ports:
+      - "27020:27017"
+    volumes:
+      - ./mongo_data:/data
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MONGODB_USERNAME=admin
+      - MONGODB_PASSWORD=admin
+      - MONGODB_DATABASE=ums
