@@ -11,8 +11,7 @@ export const sendJwtToClient: RequestHandler = async (req, res, next) => {
       jwtPayload: {
         role: res.locals.allowedRoleInRoute,
         id: res.locals?.retrivedDbData?.userId
-      },
-      jwtExpiration: "10m"
+      }
     })) as string;
   }
 

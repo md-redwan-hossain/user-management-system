@@ -7,6 +7,7 @@ import {
   validateEmail,
   validateLoginCredentials
 } from "../../macro/validators/auth.validator.macro.js";
+import { jwtInCookieValidator } from "../../macro/validators/jwt.validator.macro.js";
 import { userDataValidator } from "./validators.user.js";
 
 export const userLoginDataValidation: Array<ValidationChain[] | RequestHandler> = [
@@ -30,10 +31,18 @@ export const userForgotPasswordRequestValidation: Array<ValidationChain[] | Requ
 ];
 
 export const userForgotPasswordTokenValidation: Array<ValidationChain[] | RequestHandler> = [
-  tokenFieldValidator({ tokenName: "forgotPasswordToken" }),
+  tokenFieldValidator({ tokenName: "forgotpasswordtoken" }),
   validationReport
 ];
-export const userResettPasswordValidation: Array<ValidationChain[] | RequestHandler> = [
+
+export const userResetPasswordValidation: Array<ValidationChain[] | RequestHandler> = [
+  jwtInCookieValidator({ fieldName: "passwordResetToken", skipisVerifiedChecking: true }),
+  validationReport,
   passwordResetValidator(),
+  validationReport
+];
+
+export const userVerificationTokenValidation: Array<ValidationChain[] | RequestHandler> = [
+  tokenFieldValidator({ tokenName: "verificationtoken" }),
   validationReport
 ];

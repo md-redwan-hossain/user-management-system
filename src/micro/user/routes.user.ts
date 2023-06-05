@@ -3,12 +3,13 @@ import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
   saveInDbOnSignUp,
   sendFortgotPasswordToken,
-  sendResetPasswordToken,
-  sendVerificationTokenOnSignUp
+  sendResetPasswordCookie,
+  sendVerificationToken,
+  verifyUser
 } from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
-import { roleGuardInCookie } from "../../macro/roleGuard.macro.js";
+import { roleGuardInCookie, roleGuardInCookieForVerifyRoute } from "../../macro/roleGuard.macro.js";
 import * as userMiddlewares from "./middlewares.user.js";
 
 const userRouter: Router = express.Router();
@@ -23,18 +24,21 @@ userRouter.post(
   "/signup",
   ...userMiddlewares.userSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
-  asyncErrorHandler(sendVerificationTokenOnSignUp),
+  asyncErrorHandler(sendVerificationToken({ resendToken: false })),
   asyncErrorHandler(sendJwtToClient)
 );
 
-// userRouter
-//   .route("/verify")
-//   .get(
-//     ...roleGuardInCookie,
-//     ...userMiddlewares.userForgotPasswordTokenValidation,
-//     asyncErrorHandler(sendResetPasswordToken)
-//   )
-//   .patch(...userMiddlewares.userResettPasswordValidation, asyncErrorHandler(sendJwtToClient));
+userRouter
+  .route("/verify")
+  .get(
+    ...roleGuardInCookieForVerifyRoute,
+    asyncErrorHandler(sendVerificationToken({ resendToken: true }))
+  )
+  .patch(
+    ...roleGuardInCookieForVerifyRoute,
+    ...userMiddlewares.userVerificationTokenValidation,
+    asyncErrorHandler(verifyUser)
+  );
 
 userRouter.post(
   "/forgot-password",
@@ -46,9 +50,9 @@ userRouter
   .route("/reset-password")
   .get(
     ...userMiddlewares.userForgotPasswordTokenValidation,
-    asyncErrorHandler(sendResetPasswordToken)
+    asyncErrorHandler(sendResetPasswordCookie)
   )
-  .patch(...userMiddlewares.userResettPasswordValidation, asyncErrorHandler(sendJwtToClient));
+  .patch(...userMiddlewares.userResetPasswordValidation, asyncErrorHandler(sendJwtToClient));
 
 userRouter
   .route("/profile")

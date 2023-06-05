@@ -5,6 +5,19 @@ import mongoose, { Document, Model } from "mongoose";
 declare global {
   type MicroValidator = ({ useForUpdate }: { useForUpdate: boolean }) => Array<ValidationChain[]>;
 
+  type MacroJwtValidator = ({
+    fieldName,
+    skipisVerifiedChecking
+  }: {
+    fieldName: string;
+    skipisVerifiedChecking: boolean;
+  }) => ValidationChain[];
+
+  type ValidationTokenValue = {
+    userId: mongoose.Types.ObjectId | string;
+    token: string;
+  };
+
   type MicroMiddleware = ({ useForUpdate }: { useForUpdate: boolean }) => RequestHandler;
 
   type CustomValidationChain = ({ isOptional }: { isOptional: boolean }) => ValidationChain[];

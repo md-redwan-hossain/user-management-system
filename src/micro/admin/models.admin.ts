@@ -38,8 +38,10 @@ const userTrackingSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      unique: true,
-      required: true
+      required: true,
+      index: {
+        unique: true
+      }
     },
     role: {
       type: String,

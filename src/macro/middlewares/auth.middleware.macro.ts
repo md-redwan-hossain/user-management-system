@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { nanoid } from "nanoid/async";
+import { UserTracking } from "../../micro/admin/models.admin.js";
 import { cookiePreference, memoryDB } from "../settings.macro.js";
 import { fireEventOnSignUp } from "../utils/eventsPublisher.utils.macro.js";
 import futureTime from "../utils/futureTime.util.macro.js";
@@ -43,33 +44,61 @@ export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
   next();
 };
 
-export const sendVerificationTokenOnSignUp: RequestHandler = async (req, res, next) => {
-  const token = await nanoid();
-  if (!memoryDB.has(`verificationToken-${res.locals.newSignedUpUser._id}-${token}`)) {
-    const cacheStatus = memoryDB.set(
-      `verificationToken-${res.locals.newSignedUpUser._id}-${token}`,
-      res.locals.newSignedUpUser._id,
-      60 * 60
-    );
-    if (cacheStatus) {
-      console.log(`Activation token: ${token}`);
+export const sendVerificationToken = ({
+  resendToken
+}: {
+  resendToken: boolean;
+}): RequestHandler => {
+  return async (req, res, next) => {
+    if (resendToken) {
+      const userStatus = await UserTracking.findOne({
+        userId: res.locals.decodedJwt?.id
+      });
+      if (userStatus?.isVerified) next(createError(400, "User is already verified"));
     }
-  }
-  next();
+    const partialTokenKey = resendToken ? res.locals.decodedJwt.id : res.locals.newSignedUpUser._id;
+    if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
+      memoryDB.del(`verificationToken-${partialTokenKey}`);
+    }
+    const token = await nanoid();
+    const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
+    const cacheStatus = memoryDB.set(`verificationToken-${tokenValue.userId}`, tokenValue, 60 * 60);
+    if (cacheStatus) console.log(`Activation token: ${token}`);
+    res.status(200).json({
+      status: "success",
+      message: "Check for verification token in your email within 1 hour"
+    });
+  };
+};
+
+export const verifyUser: RequestHandler = async (req, res, next) => {
+  const tokenKey = `verificationToken-${res.locals.decodedJwt.id}`;
+  if (memoryDB.has(tokenKey)) {
+    const tokenInCache = memoryDB.get(tokenKey) as ValidationTokenValue;
+
+    if (tokenInCache.token === res.locals.validatedReqData.verificationtoken) {
+      res.locals.userStatus = await UserTracking.findOneAndUpdate(
+        { userId: tokenInCache.userId },
+        { isVerified: true }
+      );
+      memoryDB.del(tokenKey);
+      res.status(200).json({ status: "success", message: "User is activated" });
+    } else next(createError(400, "verificationToken not matched"));
+  } else next(createError(400, "verificationToken not found"));
 };
 
 export const sendFortgotPasswordToken: RequestHandler = async (req, res, next) => {
-  const userFromDb = res.locals.DbModel.findOne({ email: res.locals.validatedReqData.email });
+  const userFromDb = await res.locals.DbModel.findOne({ email: res.locals.validatedReqData.email });
   if (!userFromDb) next(createError(404, "User not found"));
   else {
     const token = await nanoid();
     if (!memoryDB.has(`forgotPasswordToken-${token}`)) {
       const cacheStatus = memoryDB.set(`forgotPasswordToken-${token}`, userFromDb._id, 60 * 5);
       if (cacheStatus) {
-        console.log(`${token}`);
+        console.log(`Token for password reset: ${token}`);
         res.json({
           status: "success",
-          message: "Check for reset token in your email within 5 minute"
+          message: "Check for password reset token in your email within 5 minute"
         });
       }
     } else {
@@ -78,18 +107,18 @@ export const sendFortgotPasswordToken: RequestHandler = async (req, res, next) =
   }
 };
 
-export const sendResetPasswordToken: RequestHandler = async (req, res, next) => {
-  if (!memoryDB.has(`forgotPasswordToken-${res.locals.validatedReqData.forgotPasswordToken}`)) {
-    createError(400, "forgotPasswordToken not found");
+export const sendResetPasswordCookie: RequestHandler = async (req, res, next) => {
+  if (!memoryDB.has(`forgotPasswordToken-${res.locals.validatedReqData.forgotpasswordtoken}`)) {
+    next(createError(400, "forgotPasswordToken not found"));
   } else {
-    const userIdFromforgotPasswordToken = memoryDB.take(
-      `forgotPasswordToken-${res.locals.validatedReqData.forgotPasswordToken}`
+    const userIdFromForgotPasswordToken = memoryDB.get(
+      `forgotPasswordToken-${res.locals.validatedReqData.forgotpasswordtoken}`
     );
 
     const resetToken = await issueJwt({
       jwtPayload: {
-        id: userIdFromforgotPasswordToken,
-        role: res.locals.decodedJwt.role
+        id: userIdFromForgotPasswordToken,
+        role: res.locals.allowedRoleInRoute
       },
       jwtExpiration: "5m"
     });

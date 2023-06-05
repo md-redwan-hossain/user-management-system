@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { Model } from "mongoose";
+import { UserTracking } from "../../micro/admin/models.admin.js";
 import { memoryDB } from "../settings.macro.js";
 import { excludeDataCommon } from "../utils/mongoose.util.macro.js";
 
@@ -43,9 +44,11 @@ export const updateProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
       ? res.locals.validatedReqData.userId
       : res.locals.decodedJwt.id;
 
-    const updatedUserDataFromDB: IUser = await res.locals.dbdbModel
-      .findByIdAndUpdate(queryId, res.locals.validatedReqData, { new: true, runValidators: true })
-      .select(excludeDataCommon);
+    const updatedUserDataFromDB: IUser = await res.locals.DbModel.findByIdAndUpdate(
+      queryId,
+      res.locals.validatedReqData,
+      { new: true, runValidators: true }
+    ).select(excludeDataCommon);
 
     if (updatedUserDataFromDB) {
       res.status(200).json({
@@ -63,6 +66,8 @@ export const deleteProfile: MacroMiddleware = ({ useObjectIdForQuery }) => {
       : res.locals.decodedJwt.id;
 
     const deletionFlag = await res.locals.DbModel.findByIdAndDelete(queryId);
+
+    await UserTracking.findOneAndDelete({ userId: queryId });
 
     if (deletionFlag) {
       res.status(204).clearCookie("accessToken", { path: res.locals.cookiePath }).end();

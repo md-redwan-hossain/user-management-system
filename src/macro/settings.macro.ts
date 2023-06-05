@@ -49,7 +49,7 @@ export const globalMiddlewares: (ValidationChain[] | RequestHandler)[] = [
   // globalRequestLimiter,
   express.json(),
   cookieParser(),
-  morgan("dev"),
+  // morgan("dev"),
   ...sanitizeAndSeparateSortAndLimit
 ];
 
@@ -74,6 +74,6 @@ export const memoryDB: NodeCache = new NodeCache();
 // DB connection
 export async function initDatabase(): Promise<void> {
   console.log("Connecting to DB...");
-  await mongoose.connect(mongoConnectionUrl, { autoIndex: false });
+  await mongoose.connect(mongoConnectionUrl);
   console.log("DB is connected");
 }
