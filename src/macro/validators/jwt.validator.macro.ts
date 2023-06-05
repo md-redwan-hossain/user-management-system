@@ -33,28 +33,3 @@ export const jwtInCookieValidator = (): ValidationChain[] => {
       .bail()
   ];
 };
-
-export const passwordResetTokenValidator = (): ValidationChain[] => {
-  return [
-    header("passwordResetToken")
-      .trim()
-      .notEmpty()
-      .withMessage("passwordResetToken can't be empty")
-      .bail()
-      .isJWT()
-      .withMessage("Invalid passwordResetToken")
-      .bail()
-      .custom(async (jwtInReq, { req }) => {
-        req.res.locals.decodedJwt = await verifyJwt(jwtInReq);
-        console.log(req.res.locals.decodedJwt);
-        return true;
-      })
-      .bail()
-      .custom((_, { req }) => {
-        if (req.res.locals.allowedRoleInRoute !== req.res.locals.decodedJwt.role) {
-          req.res.locals.expressValidatorErrorCode = 401;
-          throw new Error(`You are not ${req.res.locals.allowedRoleInRoute}`);
-        } else return true;
-      })
-  ];
-};

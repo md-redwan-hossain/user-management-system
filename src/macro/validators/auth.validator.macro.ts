@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
-import { ValidationChain, body } from "express-validator";
+import { ValidationChain, body, check, cookie, header } from "express-validator";
 import validator from "validator";
 import { UserTracking } from "../../micro/admin/models.admin.js";
+import { memoryDB } from "../settings.macro.js";
 import { makeFieldOptional } from "../utils/expressValidator.util.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 import {
@@ -11,7 +12,12 @@ import {
 } from "../utils/validators.util.macro.js";
 
 /* eslint no-param-reassign: 0 */
-export const validateEmail: CustomValidationChain = ({ isOptional }) => {
+
+export const validateEmail: IdentityValidationChain = ({
+  isOptional,
+  uniqueConstraint,
+  useForPasswordReset
+}) => {
   return [
     makeFieldOptional({ optionalFlag: isOptional, field: "email" })[0]
       .trim()
@@ -28,20 +34,19 @@ export const validateEmail: CustomValidationChain = ({ isOptional }) => {
         all_lowercase: true,
         gmail_remove_dots: false
       })
-  ];
-};
-
-export const validateEmailUniqueConstraint: CustomValidationChain = ({ isOptional }) => {
-  return [
-    makeFieldOptional({ optionalFlag: isOptional, field: "email" })[0].custom(
-      async (emailFromRequestBody: string, { req }): Promise<boolean> => {
-        const isExistingUser = await req?.res.locals.DbModel.findOne({
-          email: emailFromRequestBody
-        });
-        if (isExistingUser) throw new Error("Email already in use");
+      .custom(async (emainInReq: string, { req }) => {
+        if (!uniqueConstraint) return true;
+        const isExists = await req.res.locals.DbModel.findOne({ email: emainInReq });
+        if (isExists) throw new Error("Email already in use");
         else return true;
-      }
-    )
+      })
+      .bail()
+      .custom(async (emainInReq: string, { req }) => {
+        if (!useForPasswordReset) return true;
+        const retrievedUser = await req.res.locals.DbModel.findOne({ email: emainInReq });
+        if (!retrievedUser.isVerified) throw new Error("User is not verified");
+        else return true;
+      })
   ];
 };
 
@@ -105,7 +110,6 @@ export const validateChangePassword: CustomValidationChain = ({ isOptional }) =>
       })
       .bail()
       .custom((data: IPasswordUpdateData) => {
-        passwordValidation(data.newPassword);
         if (passwordValidation(data.newPassword)) return true;
         throw new Error(
           "newPassword range 8-128 and must contain 1 uppercase, lowercase, digit, and character"
@@ -160,7 +164,6 @@ export const validateLoginCredentials = (): ValidationChain[] => {
         req.res.locals.userStatus = await UserTracking.findOne({
           userId: req.res.locals.retrivedDbData?.userId
         });
-        if (req.res.locals.userStatus?.isBanned) throw new Error("User is banned");
         if (!req.res.locals.userStatus?.isVerified) throw new Error("User is not verified");
         else return true;
       })
@@ -176,26 +179,88 @@ export const validateLoginCredentials = (): ValidationChain[] => {
         req.res.locals.expressValidatorErrorCode = 401;
         throw new Error("Wrong credentials");
       })
-      .bail()
-      .custom(async (_, { req }): Promise<boolean> => {
-        if (req.res.locals.userStatus?.isDeactivated) {
-          await UserTracking.findOneAndUpdate(
-            { userId: req.res.locals.retrivedDbData.userId },
-            { isDeactivated: false }
-          );
-        }
-        return true;
-      })
   ];
 };
 
 export const validateSignUpCredentials = (): ValidationChain[] => {
   return [
-    validateEmailUniqueConstraint({ isOptional: false })[0],
+    validateEmail({ isOptional: false, uniqueConstraint: true, useForPasswordReset: false })[0],
     validatePassword({ isOptional: false })[0]
   ];
 };
 
-// export const validateResetPassword = (): ValidationChain[] => {
-//   return [body("email")];
-// };
+export const tokenFieldValidator = ({ tokenName }: { tokenName: string }) => {
+  return [
+    header(tokenName)
+      .trim()
+      .notEmpty()
+      .withMessage(`${tokenName} can't be empty`)
+      .bail()
+      .isLength({ min: 21, max: 21 })
+      .withMessage(`${tokenName} must be 21 characters long`)
+  ];
+};
+
+export const passwordResetValidator = (): ValidationChain[] => {
+  return [
+    check("")
+      .custom((_, { req }) => {
+        if (req.cookies?.passwordResetToken) return true;
+        throw new Error("passwordResetToken is missing in cookie");
+      })
+      .bail()
+      .custom((_, { req }) => {
+        const trimmedToken = stringTrim(req.cookies?.passwordResetToken);
+        if (trimmedToken) return trimmedToken;
+        throw new Error("passwordResetToken can't be empty");
+      })
+      .bail()
+      .custom((jwtInReq: string, { req }) => {
+        if (validator.default.isJWT(jwtInReq)) return true;
+        throw new Error("Invalid passwordResetToken");
+      })
+      .bail()
+      .custom(async (jwtInReq, { req }) => {
+        req.res.locals.decodedJwt = await verifyJwt(jwtInReq);
+        return true;
+      })
+      .bail()
+      .custom((_, { req }) => {
+        if (req.res.locals.allowedRoleInRoute !== req.res.locals.decodedJwt.role) {
+          req.res.locals.expressValidatorErrorCode = 401;
+          throw new Error(`You are not ${req.res.locals.allowedRoleInRoute}`);
+        } else return true;
+      })
+      .custom((_, { req }) => {
+        if (req.body?.newPassword) return true;
+        throw new Error("newPassword is missing in body");
+      })
+      .bail()
+      .custom((_, { req }) => {
+        const trimmedpassword = stringTrim(req.cookies?.newPassword);
+        if (trimmedpassword) return trimmedpassword;
+        throw new Error("passwordResetToken can't be empty");
+      })
+      .bail()
+      .custom((newPasswordInReq: string) => {
+        if (passwordValidation(newPasswordInReq)) return true;
+        throw new Error(
+          "newPassword range 8-128 and must contain 1 uppercase, lowercase, digit, and character"
+        );
+      })
+      .bail()
+      .custom(async (newPasswordInReq: string, { req }) => {
+        const retrievedUser = await req.res.locals.DbModel.findById(req.res.locals.decodedJwt.id);
+        const isSameAsOldPassword: boolean = await bcrypt.compare(
+          newPasswordInReq,
+          retrievedUser.password
+        );
+        if (isSameAsOldPassword) throw new Error("newPassword is same as Old password");
+        else {
+          retrievedUser.password = newPasswordInReq;
+          await retrievedUser.save();
+          return true;
+        }
+      })
+  ];
+};

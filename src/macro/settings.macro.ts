@@ -31,7 +31,6 @@ export const globalRequestLimiterConfig = new RateLimiterMemory({
 
 const globalRateLimiterMiddleware: RequestHandler = async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV === "development") console.log(`Request IP: ${req.ip}`);
     await globalRequestLimiterConfig.consume(req.ip);
     next();
   } catch (err) {

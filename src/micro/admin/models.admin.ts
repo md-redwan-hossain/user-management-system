@@ -49,14 +49,6 @@ const userTrackingSchema = new mongoose.Schema(
     isVerified: {
       type: Boolean,
       default: false
-    },
-    isDeactivated: {
-      type: Boolean,
-      default: false
-    },
-    isBanned: {
-      type: Boolean,
-      default: false
     }
   },
   {

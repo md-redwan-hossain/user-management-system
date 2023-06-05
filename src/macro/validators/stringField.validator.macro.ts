@@ -15,31 +15,3 @@ export const stringFieldValidator: StringField = ({ fieldName, maxLength, isOpti
       .bail()
   ];
 };
-
-export const stringEnumFieldValidator: StringEnumField = ({
-  fieldName,
-  enumArray,
-  makeUpperCase,
-  isOptional
-}) => {
-  return [
-    makeFieldOptional({
-      optionalFlag: isOptional,
-      field: fieldName
-    })[0]
-      .trim()
-      .notEmpty()
-      .withMessage(`${fieldName} can't be empty`)
-      .bail()
-      .customSanitizer((data: string) => {
-        /* eslint-disable */
-        if (makeUpperCase) data = data.toUpperCase();
-        else data = data.toLowerCase();
-         /* eslint-enable */
-        return data;
-      })
-      .isIn(enumArray)
-      .withMessage(`${fieldName} must be one of: ${enumArray}`)
-      .bail()
-  ];
-};

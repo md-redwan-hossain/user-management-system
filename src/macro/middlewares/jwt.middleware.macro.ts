@@ -19,5 +19,10 @@ export const sendJwtToClient: RequestHandler = async (req, res, next) => {
   res
     .cookie("accessToken", jwtForClient, cookiePreference({ cookiePath: res.locals.cookiePath }))
     .status(res.locals.jwtForSignUp ? 201 : 200)
-    .json({ status: "success" });
+    .json({
+      status: "success",
+      message: res.locals.jwtForSignUp
+        ? "Check for activation token in your email within 1 hour"
+        : null
+    });
 };

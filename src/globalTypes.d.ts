@@ -9,6 +9,16 @@ declare global {
 
   type CustomValidationChain = ({ isOptional }: { isOptional: boolean }) => ValidationChain[];
 
+  type IdentityValidationChain = ({
+    isOptional,
+    uniqueConstraint,
+    useForPasswordReset
+  }: {
+    isOptional: boolean;
+    uniqueConstraint: boolean;
+    useForPasswordReset: boolean;
+  }) => ValidationChain[];
+
   type MacroMiddleware = ({
     useObjectIdForQuery
   }: {
@@ -70,6 +80,7 @@ declare global {
   }
 
   interface IUser extends Document {
+    _id: mongoose.Types.ObjectId;
     fullName: string;
     email: string;
     password: string;
@@ -96,6 +107,7 @@ declare global {
       cookiePath: string;
       decodedJwt: IDecodedJwtPayload;
       jwtForSignUp: string;
+      newSignedUpUser: IUser;
     }
   }
 }

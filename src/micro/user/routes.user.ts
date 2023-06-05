@@ -1,9 +1,10 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
-  fortgotPasswordToken,
-  resetPasswordToken,
-  saveInDbOnSignUp
+  saveInDbOnSignUp,
+  sendFortgotPasswordToken,
+  sendResetPasswordToken,
+  sendVerificationTokenOnSignUp
 } from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
@@ -19,20 +20,35 @@ userRouter.post(
 );
 
 userRouter.post(
-  "/forgot-password",
-  ...userMiddlewares.userForgotPasswordValidation,
-  asyncErrorHandler(fortgotPasswordToken)
-);
-userRouter
-  .route("/reset-password")
-  .get(...userMiddlewares.userResetPasswordValidation, asyncErrorHandler(resetPasswordToken));
-
-userRouter.post(
   "/signup",
   ...userMiddlewares.userSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
+  asyncErrorHandler(sendVerificationTokenOnSignUp),
   asyncErrorHandler(sendJwtToClient)
 );
+
+// userRouter
+//   .route("/verify")
+//   .get(
+//     ...roleGuardInCookie,
+//     ...userMiddlewares.userForgotPasswordTokenValidation,
+//     asyncErrorHandler(sendResetPasswordToken)
+//   )
+//   .patch(...userMiddlewares.userResettPasswordValidation, asyncErrorHandler(sendJwtToClient));
+
+userRouter.post(
+  "/forgot-password",
+  ...userMiddlewares.userForgotPasswordRequestValidation,
+  asyncErrorHandler(sendFortgotPasswordToken)
+);
+
+userRouter
+  .route("/reset-password")
+  .get(
+    ...userMiddlewares.userForgotPasswordTokenValidation,
+    asyncErrorHandler(sendResetPasswordToken)
+  )
+  .patch(...userMiddlewares.userResettPasswordValidation, asyncErrorHandler(sendJwtToClient));
 
 userRouter
   .route("/profile")
