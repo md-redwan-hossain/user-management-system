@@ -40,11 +40,14 @@ export const passwordResetTokenValidator = (): ValidationChain[] => {
       .trim()
       .notEmpty()
       .withMessage("passwordResetToken can't be empty")
+      .bail()
       .isJWT()
       .withMessage("Invalid passwordResetToken")
       .bail()
       .custom(async (jwtInReq, { req }) => {
-        const verifyFlag = await verifyJwt(jwtInReq);
+        req.res.locals.decodedJwt = await verifyJwt(jwtInReq);
+        console.log(req.res.locals.decodedJwt);
+        return true;
       })
       .bail()
       .custom((_, { req }) => {

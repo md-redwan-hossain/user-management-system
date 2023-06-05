@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
+  fortgotPasswordToken,
   resetPasswordToken,
   saveInDbOnSignUp
 } from "../../macro/middlewares/auth.middleware.macro.js";
@@ -19,9 +20,12 @@ userRouter.post(
 
 userRouter.post(
   "/forgot-password",
-  ...userMiddlewares.userPasswordResetEmailValidation,
-  asyncErrorHandler(resetPasswordToken)
+  ...userMiddlewares.userForgotPasswordValidation,
+  asyncErrorHandler(fortgotPasswordToken)
 );
+userRouter
+  .route("/reset-password")
+  .get(...userMiddlewares.userResetPasswordValidation, asyncErrorHandler(resetPasswordToken));
 
 userRouter.post(
   "/signup",

@@ -15,6 +15,7 @@ export const sendJwtToClient: RequestHandler = async (req, res, next) => {
       jwtExpiration: "10m"
     })) as string;
   }
+
   res
     .cookie("accessToken", jwtForClient, cookiePreference({ cookiePath: res.locals.cookiePath }))
     .status(res.locals.jwtForSignUp ? 201 : 200)

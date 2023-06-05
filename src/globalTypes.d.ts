@@ -48,6 +48,9 @@ declare global {
     id: string;
     iat: number;
     exp: number;
+    pin?: string;
+    forgot?: boolean;
+    reset?: boolean;
   }
 
   interface IPasswordUpdateData {
