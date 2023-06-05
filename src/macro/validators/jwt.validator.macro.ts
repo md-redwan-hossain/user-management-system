@@ -30,7 +30,7 @@ export const jwtInCookieValidator: MacroJwtValidator = ({ fieldName, skipisVerif
         const userStatus = await UserTracking.findOne({
           userId: req.res.locals.decodedJwt?.id
         });
-        console.log(userStatus);
+
         if (!userStatus?.isVerified) throw new Error("User is not verified");
         else return true;
       })

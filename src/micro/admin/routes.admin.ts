@@ -1,10 +1,16 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
-import { saveInDbOnSignUp } from "../../macro/middlewares/auth.middleware.macro.js";
+import {
+  saveInDbOnSignUp,
+  sendFortgotPasswordToken,
+  sendResetPasswordCookie,
+  sendVerificationToken,
+  verifyUser
+} from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
 import { mongoIdValidation } from "../../macro/middlewares/routeParam.middleware.macro.js";
-import { roleGuardInCookie } from "../../macro/roleGuard.macro.js";
+import { roleGuardInCookie, roleGuardInCookieForVerifyRoute } from "../../macro/roleGuard.macro.js";
 import { supportStuffDataUpdateValidation } from "../supportStuff/middlewares.supportStuff.js";
 import { userDataUpdateValidation } from "../user/middlewares.user.js";
 import { User } from "../user/models.user.js";
@@ -22,6 +28,7 @@ adminRouter.post(
   "/signup",
   ...adminMiddlewares.adminSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
+  asyncErrorHandler(sendVerificationToken({ resendToken: false })),
   asyncErrorHandler(sendJwtToClient)
 );
 
@@ -42,6 +49,32 @@ adminRouter
   );
 
 adminRouter
+  .route("/verify")
+  .get(
+    ...roleGuardInCookieForVerifyRoute,
+    asyncErrorHandler(sendVerificationToken({ resendToken: true }))
+  )
+  .patch(
+    ...roleGuardInCookieForVerifyRoute,
+    ...adminMiddlewares.adminVerificationTokenValidation,
+    asyncErrorHandler(verifyUser)
+  );
+
+adminRouter.post(
+  "/forgot-password",
+  ...adminMiddlewares.adminForgotPasswordRequestValidation,
+  asyncErrorHandler(sendFortgotPasswordToken)
+);
+
+adminRouter
+  .route("/reset-password")
+  .get(
+    ...adminMiddlewares.adminForgotPasswordTokenValidation,
+    asyncErrorHandler(sendResetPasswordCookie)
+  )
+  .patch(...adminMiddlewares.adminResetPasswordValidation, asyncErrorHandler(sendJwtToClient));
+
+adminRouter
   .route("/users")
   .get(
     ...roleGuardInCookie,
@@ -58,11 +91,13 @@ adminRouter
   )
   .patch(
     ...roleGuardInCookie,
-    ...userDataUpdateValidation,
+    ...mongoIdValidation({ routeParamName: "userId" }),
+    ...adminMiddlewares.adminOtherUserDataUpdateValidation,
     asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: true }))
   )
   .delete(
     ...roleGuardInCookie,
+    ...mongoIdValidation({ routeParamName: "userId" }),
     asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: true }))
   );
 
@@ -83,11 +118,13 @@ adminRouter
   )
   .patch(
     ...roleGuardInCookie,
-    ...supportStuffDataUpdateValidation,
+    ...mongoIdValidation({ routeParamName: "userId" }),
+    ...adminMiddlewares.adminOtherUserDataUpdateValidation,
     asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: true }))
   )
   .delete(
     ...roleGuardInCookie,
+    ...mongoIdValidation({ routeParamName: "userId" }),
     asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: true }))
   );
 

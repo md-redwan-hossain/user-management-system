@@ -56,18 +56,18 @@ export const sendVerificationToken = ({
       });
       if (userStatus?.isVerified) next(createError(400, "User is already verified"));
     }
+    // when resend token request is received, the user must be logged in
+    // hence, user's ObjectId is available via the JWT (accessToken)
     const partialTokenKey = resendToken ? res.locals.decodedJwt.id : res.locals.newSignedUpUser._id;
+
     if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
       memoryDB.del(`verificationToken-${partialTokenKey}`);
     }
     const token = await nanoid();
     const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
-    const cacheStatus = memoryDB.set(`verificationToken-${tokenValue.userId}`, tokenValue, 60 * 60);
+    const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
     if (cacheStatus) console.log(`Activation token: ${token}`);
-    res.status(200).json({
-      status: "success",
-      message: "Check for verification token in your email within 1 hour"
-    });
+    next();
   };
 };
 
@@ -133,6 +133,6 @@ export const sendResetPasswordCookie: RequestHandler = async (req, res, next) =>
         })
       )
       .status(200)
-      .json({ status: "success" });
+      .json({ status: "success", message: "send newPassword in /reset-password route" });
   }
 };

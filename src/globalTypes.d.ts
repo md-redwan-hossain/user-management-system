@@ -25,11 +25,13 @@ declare global {
   type IdentityValidationChain = ({
     isOptional,
     uniqueConstraint,
-    useForPasswordReset
+    useForPasswordReset,
+    useForUpdateByOtherUser
   }: {
     isOptional: boolean;
     uniqueConstraint: boolean;
     useForPasswordReset: boolean;
+    useForUpdateByOtherUser: boolean;
   }) => ValidationChain[];
 
   type MacroMiddleware = ({

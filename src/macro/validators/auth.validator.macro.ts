@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import { ValidationChain, body, header } from "express-validator";
-import validator from "validator";
 import { UserTracking } from "../../micro/admin/models.admin.js";
-import { memoryDB } from "../settings.macro.js";
+import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
 import { makeFieldOptional } from "../utils/expressValidator.util.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 import {
@@ -16,7 +15,8 @@ import {
 export const validateEmail: IdentityValidationChain = ({
   isOptional,
   uniqueConstraint,
-  useForPasswordReset
+  useForPasswordReset,
+  useForUpdateByOtherUser
 }) => {
   return [
     makeFieldOptional({ optionalFlag: isOptional, field: "email" })[0]
@@ -36,7 +36,12 @@ export const validateEmail: IdentityValidationChain = ({
       })
       .custom(async (emainInReq: string, { req }) => {
         if (!uniqueConstraint) return true;
-        const isExists = await req.res.locals.DbModel.findOne({ email: emainInReq });
+        let isExists;
+        if (useForUpdateByOtherUser) {
+          isExists = await dbModelDeterminer(req.path).findOne({ email: emainInReq });
+        } else {
+          isExists = await req.res.locals.DbModel.findOne({ email: emainInReq });
+        }
         if (isExists) throw new Error("Email already in use");
         else return true;
       })
@@ -84,7 +89,7 @@ export const validateChangePassword: CustomValidationChain = ({ isOptional }) =>
       .bail()
       .custom((data: IPasswordUpdateData) => {
         data.oldPassword = stringTrim(data.oldPassword);
-        data.newPassword = stringTrim(data.oldPassword);
+        data.newPassword = stringTrim(data.newPassword);
         if (data.oldPassword && data.newPassword) return true;
         throw new Error("oldPassword or newPassword can't be empty");
       })
@@ -187,7 +192,12 @@ export const validateLoginCredentials = (): ValidationChain[] => {
 
 export const validateSignUpCredentials = (): ValidationChain[] => {
   return [
-    validateEmail({ isOptional: false, uniqueConstraint: true, useForPasswordReset: false })[0],
+    validateEmail({
+      isOptional: false,
+      uniqueConstraint: true,
+      useForPasswordReset: false,
+      useForUpdateByOtherUser: false
+    })[0],
     validatePassword({ isOptional: false })[0]
   ];
 };
