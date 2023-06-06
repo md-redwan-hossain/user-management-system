@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { ValidationChain, body, header } from "express-validator";
+import { prisma } from "../settings.macro.js";
 import { makeFieldOptional } from "../utils/expressValidator.util.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 import {
@@ -36,9 +37,13 @@ export const validateEmail: IdentityValidationChain = ({
         if (!uniqueConstraint) return true;
         let isExists;
         if (useForUpdateByOtherUser) {
-          isExists = await dbModelDeterminer(req.path).findOne({ email: emainInReq });
+          isExists = await prisma
+            .dbModelDeterminer(req.path)
+            ?.findUnique({ where: { email: emainInReq } });
         } else {
-          isExists = await req.res.locals.DbModel.findOne({ email: emainInReq });
+          isExists = await req.res.locals.DbModel.findUnique({
+            where: { email: emainInReq }
+          });
         }
         if (isExists) throw new Error("Email already in use");
         else return true;
@@ -46,11 +51,13 @@ export const validateEmail: IdentityValidationChain = ({
       .bail()
       .custom(async (emainInReq: string, { req }) => {
         if (!useForPasswordReset) return true;
-        const retrievedUser = await req.res.locals.DbModel.findOne({ email: emainInReq });
+        const retrievedUser = await req.res.locals.DbModel.findUnique({
+          where: { email: emainInReq }
+        });
         if (!retrievedUser) throw new Error("No user found with the given email");
 
-        const userStatus = await UserTracking.findOne({
-          userId: retrievedUser._id
+        const userStatus = await prisma.userTracker.findUnique({
+          where: { userId: retrievedUser.id }
         });
         if (!userStatus?.isVerified) throw new Error("User is not verified");
         else return true;
@@ -107,9 +114,9 @@ export const validateChangePassword: CustomValidationChain = ({ isOptional }) =>
       })
       .bail()
       .custom(async (data: IPasswordUpdateData, { req }): Promise<boolean> => {
-        const { password: oldPasswordInDb } = await req.res.locals.DbModel.findById(
-          req.res.locals.userId
-        );
+        const { password: oldPasswordInDb } = await req.res.locals.DbModel.findUnique({
+          where: { id: req.res.locals.userId }
+        });
         const isValidOldPassword: boolean = await bcrypt.compare(data.oldPassword, oldPasswordInDb);
         if (isValidOldPassword) return true;
         throw new Error("Old password does not matched with Database");
@@ -154,7 +161,9 @@ export const validateLoginCredentials = (): ValidationChain[] => {
       })
       .bail()
       .custom(async (data: ILoginData, { req }): Promise<boolean> => {
-        const retrievedUser = await req.res.locals.DbModel.findOne({ email: data.email });
+        const retrievedUser = await req.res.locals.DbModel.findUnique({
+          where: { email: data.email }
+        });
         if (retrievedUser) {
           req.res.locals.retrivedDbData = {
             userId: retrievedUser._id,
@@ -166,14 +175,6 @@ export const validateLoginCredentials = (): ValidationChain[] => {
         throw new Error("No user found with the given email.");
       })
       .bail()
-      // .custom(async (_, { req }): Promise<boolean> => {
-      //   req.res.locals.userStatus = await UserTracking.findOne({
-      //     userId: req.res.locals.retrivedDbData?.userId
-      //   });
-      //   if (!req.res.locals.userStatus?.isVerified) throw new Error("User is not verified");
-      //   else return true;
-      // })
-      // .bail()
       .custom(async (data: ILoginData, { req }): Promise<boolean> => {
         const isValidPassword = await bcrypt.compare(
           data.password,
@@ -230,7 +231,9 @@ export const passwordResetValidator = (): ValidationChain[] => {
       })
       .bail()
       .custom(async (newPasswordInReq: string, { req }) => {
-        const retrievedUser = await req.res.locals.DbModel.findById(req.res.locals.decodedJwt.id);
+        const retrievedUser = await req.res.locals.DbModel.findUnique({
+          where: { id: req.res.locals.decodedJwt.id }
+        });
         const isSameAsOldPassword: boolean = await bcrypt.compare(
           newPasswordInReq,
           retrievedUser.password
@@ -238,7 +241,10 @@ export const passwordResetValidator = (): ValidationChain[] => {
         if (isSameAsOldPassword) throw new Error("newPassword is same as Old password");
         else {
           retrievedUser.password = await bcrypt.hash(newPasswordInReq, 10);
-          await retrievedUser.save();
+          await req.res.locals.DbModel.update({
+            where: { id: req.res.locals.decodedJwt.id },
+            data: { password: retrievedUser.password }
+          });
           return true;
         }
       })

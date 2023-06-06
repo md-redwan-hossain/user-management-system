@@ -1,16 +1,14 @@
 import { RequestHandler } from "express";
 import createError from "http-errors";
-import { memoryDB } from "../../macro/settings.macro.js";
-import { excludeDataCommon } from "../../macro/utils/mongoose.util.macro.js";
-import { SupportStuff } from "../supportStuff/models.supportStuff.js";
-import { User } from "../user/models.user.js";
+import { memoryDB, prisma } from "../../macro/settings.macro.js";
 
 export const getAllUsers: RequestHandler = async (req, res, next): Promise<void> => {
-  const userDataFromDB = await User.find(req.query)
-    .select(excludeDataCommon)
-    .sort(res.locals?.sortingData || "-createdAt")
-    .skip(res.locals?.skipValue || 0)
-    .limit(res.locals?.dataPerPage || 20);
+  const userDataFromDB = await prisma.user.findMany({
+    skip: res.locals?.skipValue || 0,
+    take: res.locals?.dataPerPage || 20,
+    orderBy: [res.locals?.sortingData || { createdAt: "desc" }],
+    select: { password: false }
+  });
 
   if (userDataFromDB) {
     res.status(200).json({
@@ -22,11 +20,12 @@ export const getAllUsers: RequestHandler = async (req, res, next): Promise<void>
 };
 
 export const getAllSupportStuffs: RequestHandler = async (req, res, next): Promise<void> => {
-  const userDataFromDB = await SupportStuff.find(req.query)
-    .select(excludeDataCommon)
-    .sort(res.locals?.sortingData || "-createdAt")
-    .skip(res.locals?.skipValue || 0)
-    .limit(res.locals?.dataPerPage || 20);
+  const userDataFromDB = await prisma.supportStuff.findMany({
+    skip: res.locals?.skipValue || 0,
+    take: res.locals?.dataPerPage || 20,
+    orderBy: [res.locals?.sortingData || { createdAt: "desc" }],
+    select: { password: false }
+  });
 
   if (userDataFromDB) {
     res.status(200).json({

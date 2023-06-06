@@ -1,5 +1,5 @@
 import { cookie } from "express-validator";
-import { UserTracking } from "../../micro/admin/models.admin.js";
+import { prisma } from "../settings.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 
 export const jwtInCookieValidator: MacroJwtValidator = ({ fieldName, skipisVerifiedChecking }) => {
@@ -27,8 +27,8 @@ export const jwtInCookieValidator: MacroJwtValidator = ({ fieldName, skipisVerif
       .custom(async (_, { req }) => {
         // skipisVerifiedChecking is applicable for /verify route
         if (skipisVerifiedChecking) return true;
-        const userStatus = await UserTracking.findOne({
-          userId: req.res.locals.decodedJwt?.id
+        const userStatus = await prisma.userTracker.findUnique({
+          where: { userId: req.res.locals.decodedJwt?.id }
         });
 
         if (!userStatus?.isVerified) throw new Error("User is not verified");

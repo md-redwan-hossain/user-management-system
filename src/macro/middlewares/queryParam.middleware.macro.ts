@@ -10,7 +10,20 @@ export const separateSortLimitPageFromReq: RequestHandler = (req, res, next): vo
     delete req.query.limit;
   }
   if (data.sort) {
-    res.locals.sortingData = data.sort;
+    let prismaSortObj;
+    const prismaSortArr: string[] = data.sort.split(" ");
+
+    prismaSortArr.forEach((elem) => {
+      if (elem.startsWith("-")) {
+        // eslint-disable-next-line
+        elem = elem.slice(1);
+        prismaSortObj = { ...prismaSortObj, [`${elem}`]: "desc" };
+      } else {
+        prismaSortObj = { ...prismaSortObj, [`${elem}`]: "asc" };
+      }
+    });
+
+    res.locals.sortingData = prismaSortObj;
     delete req.query.sort;
   }
   if (data.page) {

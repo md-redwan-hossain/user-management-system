@@ -11,8 +11,8 @@ import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.m
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
 import { mongoIdValidation } from "../../macro/middlewares/routeParam.middleware.macro.js";
 import { roleGuardInCookie, roleGuardInCookieForVerifyRoute } from "../../macro/roleGuard.macro.js";
+import { prisma } from "../../macro/settings.macro.js";
 import { getAllUsers } from "../admin/controllers.admin.js";
-import { User } from "../user/models.user.js";
 import * as supportStuffMiddlewares from "./middlewares.supportStuff.js";
 
 const supportStuffRouter: Router = express.Router();
@@ -79,7 +79,7 @@ supportStuffRouter
   .route("/users")
   .get(
     ...roleGuardInCookie,
-    macroCrudMiddlewares.paginationDataMemoizer("totalUsersinMemoryDB", User),
+    macroCrudMiddlewares.paginationDataMemoizer("totalUsersinMemoryDB", prisma.user),
     asyncErrorHandler(getAllUsers)
   );
 

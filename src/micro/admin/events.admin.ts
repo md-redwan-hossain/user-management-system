@@ -1,16 +1,13 @@
 import { EventEmitter } from "node:events";
-
-import mongoose from "mongoose";
-import { UserTracking } from "./models.admin.js";
+import { prisma } from "../../macro/settings.macro.js";
 
 const adminEvent = new EventEmitter();
 
 adminEvent.addListener(
   "newUserSignUp",
-  async ({ userId, role }: { userId: mongoose.Types.ObjectId; role: string }) => {
+  async ({ userId, role }: { userId: string; role: string }) => {
     try {
-      const newUser = new UserTracking({ userId, role });
-      await newUser.save();
+      await prisma.userTracker.create({ data: { userId, role } });
     } catch (err) {
       console.error(err);
     }
