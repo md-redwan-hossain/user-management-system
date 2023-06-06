@@ -9,7 +9,6 @@ export const sortRule = (): ValidationChain[] => {
       .notEmpty()
       .withMessage("Sort query field is empty")
       .bail()
-      .toLowerCase()
       .not()
       .matches(regexPatterns.excludeCommaSpaceHyphen)
       .withMessage(
@@ -18,6 +17,10 @@ export const sortRule = (): ValidationChain[] => {
       .bail()
       .customSanitizer((value) => {
         return value.split(",").join(" ");
+      })
+      .custom((data) => {
+        console.log(data);
+        return true;
       })
   ];
 };

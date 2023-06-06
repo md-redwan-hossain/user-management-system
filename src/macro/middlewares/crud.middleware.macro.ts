@@ -24,13 +24,11 @@ export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
 
     if (useObjectIdForQuery) {
       userDataFromDB = await prisma.dbModelDeterminer(req.path)?.findUnique({
-        where: { id: queryId },
-        select: { password: false }
+        where: { id: queryId }
       });
     } else {
       userDataFromDB = await res.locals.DbModel.findUnique({
-        where: { id: queryId },
-        select: { password: false }
+        where: { id: queryId }
       });
     }
 

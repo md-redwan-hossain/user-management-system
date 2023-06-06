@@ -66,37 +66,6 @@ export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestH
   };
 };
 
-// export const sendVerificationToken = ({
-//   resend
-// }: {
-//   resend: boolean;
-// }): RequestHandler => {
-//   return async (req, res, next) => {
-//     const userStatus = await prisma.userTracker.findUnique({
-//       where: { userId: res.locals.newSignedUpUser.id || res.locals.decodedJwt.id }
-//     });
-
-//     if (userStatus?.isVerified) {
-//       next(createError(400, "User is already verified"));
-//     } else {
-//       // when resend token request is received, the user must be logged in
-//       // hence, user's ObjectId is available via the JWT (accessToken)
-//       const partialTokenKey = resend
-//         ? res.locals.decodedJwt.id
-//         : res.locals.newSignedUpUser.id;
-
-//       if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
-//         memoryDB.del(`verificationToken-${partialTokenKey}`);
-//       }
-//       const token = await nanoid();
-//       const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
-//       const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
-//       if (cacheStatus) console.log(`Activation token: ${token}`);
-//       next();
-//     }
-//   };
-// };
-
 export const verifyUser: RequestHandler = async (req, res, next) => {
   const tokenKey = `verificationToken-${res.locals.decodedJwt.id}`;
   if (memoryDB.has(tokenKey)) {
