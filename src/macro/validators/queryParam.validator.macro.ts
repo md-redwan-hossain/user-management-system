@@ -9,7 +9,6 @@ export const sortRule = (): ValidationChain[] => {
       .notEmpty()
       .withMessage("Sort query field is empty")
       .bail()
-      .toLowerCase()
       .not()
       .matches(regexPatterns.excludeCommaSpaceHyphen)
       .withMessage(
