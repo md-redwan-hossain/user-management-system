@@ -62,7 +62,14 @@ export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestH
     const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
     const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
     if (cacheStatus) console.log(`Activation token: ${token}`);
-    next();
+    if (resend) {
+      res.status(200).json({
+        status: "success",
+        message: "Check for activation token in your email within 1 hour"
+      });
+    } else {
+      next();
+    }
   };
 };
 
