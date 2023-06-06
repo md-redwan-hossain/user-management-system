@@ -51,15 +51,27 @@ export const updateProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
 
     let updatedUserDataFromDB;
 
+    const updatedUserData = {
+      fullName: res.locals.validatedReqData.fullName,
+      email: res.locals.validatedReqData.email,
+      password: res.locals.validatedReqData.password
+    };
+
+    for (const key in updatedUserData) {
+      if (Object.prototype.hasOwnProperty.call(updatedUserData, key)) {
+        if (!updatedUserData[key]) delete updatedUserData[key];
+      }
+    }
+
     if (useObjectIdForQuery) {
       updatedUserDataFromDB = await prisma.dbModelDeterminer(req.path)?.update({
         where: { id: queryId },
-        data: res.locals.validatedReqData
+        data: updatedUserData
       });
     } else {
       updatedUserDataFromDB = await res.locals.DbModel.update({
         where: { id: queryId },
-        data: res.locals.validatedReqData
+        data: updatedUserData
       });
     }
     if (updatedUserDataFromDB) {

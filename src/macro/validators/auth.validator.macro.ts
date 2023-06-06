@@ -84,7 +84,10 @@ export const validatePassword: CustomValidationChain = ({ isOptional }) => {
   ];
 };
 
-export const validateChangePassword: CustomValidationChain = ({ isOptional }) => {
+export const validateChangePassword: CustomValidationChainCredential = ({
+  isOptional,
+  useForUpdateByOtherUser
+}) => {
   return [
     makeFieldOptional({ optionalFlag: isOptional, field: "updatePassword" })[0]
       .custom((data: IPasswordUpdateData) => {
@@ -114,10 +117,19 @@ export const validateChangePassword: CustomValidationChain = ({ isOptional }) =>
       })
       .bail()
       .custom(async (data: IPasswordUpdateData, { req }): Promise<boolean> => {
-        const { password: oldPasswordInDb } = await req.res.locals.DbModel.findUnique({
-          where: { id: req.res.locals.userId }
-        });
-        const isValidOldPassword: boolean = await bcrypt.compare(data.oldPassword, oldPasswordInDb);
+        let user;
+        if (!useForUpdateByOtherUser) {
+          user = await req.res.locals.DbModel.findUnique({
+            where: { id: req.res.locals.userId }
+          });
+        } else {
+          user = await prisma.dbModelDeterminer(req.path).findUnique({
+            where: { id: req.res.locals.validatedReqData.userId }
+          });
+        }
+        if (!user) throw new Error("No user found");
+
+        const isValidOldPassword: boolean = await bcrypt.compare(data.oldPassword, user.password);
         if (isValidOldPassword) return true;
         throw new Error("Old password does not matched with Database");
       })

@@ -26,8 +26,14 @@ export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
     res.locals.validatedReqData.password,
     10
   );
-  // console.log(res.locals.validatedReqData);
-  const newUserInDb = await prisma.user.create({ data: res.locals.validatedReqData });
+
+  const newUserData = {
+    fullName: res.locals.validatedReqData.fullName,
+    email: res.locals.validatedReqData.email,
+    password: res.locals.validatedReqData.password
+  };
+
+  const newUserInDb = await res.locals.DbModel.create({ data: newUserData });
 
   const jwtForNewUser = (await issueJwt({
     jwtPayload: { id: newUserInDb.id, role: res.locals.allowedRoleInRoute }

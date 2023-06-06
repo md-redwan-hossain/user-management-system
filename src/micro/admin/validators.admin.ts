@@ -17,7 +17,7 @@ export const adminDataValidator: MicroValidator = ({ useForUpdate }) => {
           useForPasswordReset: false,
           useForUpdateByOtherUser: false
         }),
-        validateChangePassword({ isOptional: true })
+        validateChangePassword({ isOptional: true, useForUpdateByOtherUser: true })
       ],
       arrWhenFalse: [validateSignUpCredentials()]
     }),
@@ -33,7 +33,7 @@ export const adminOtherUserDataValidator = () => {
       useForPasswordReset: false,
       useForUpdateByOtherUser: true
     }),
-    validateChangePassword({ isOptional: true }),
+    validateChangePassword({ isOptional: true, useForUpdateByOtherUser: true }),
     macroPersonalDataValidators.fullName({ isOptional: true })
   ];
 };

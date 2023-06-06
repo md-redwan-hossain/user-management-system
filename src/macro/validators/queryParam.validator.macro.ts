@@ -18,10 +18,6 @@ export const sortRule = (): ValidationChain[] => {
       .customSanitizer((value) => {
         return value.split(",").join(" ");
       })
-      .custom((data) => {
-        console.log(data);
-        return true;
-      })
   ];
 };
 
