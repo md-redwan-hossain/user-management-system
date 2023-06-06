@@ -1,11 +1,11 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
-  saveInDbOnSignUp,
-  sendFortgotPasswordToken,
-  sendResetPasswordCookie,
-  sendVerificationToken,
-  verifyUser
+    saveInDbOnSignUp,
+    sendFortgotPasswordToken,
+    sendResetPasswordCookie,
+    sendVerificationToken,
+    verifyUser
 } from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
@@ -24,7 +24,7 @@ userRouter.post(
   "/signup",
   ...userMiddlewares.userSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
-  asyncErrorHandler(sendVerificationToken({ resendToken: false })),
+  asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
 
@@ -32,7 +32,7 @@ userRouter
   .route("/verify")
   .get(
     ...roleGuardInCookieForVerifyRoute,
-    asyncErrorHandler(sendVerificationToken({ resendToken: true }))
+    asyncErrorHandler(sendVerificationToken({ resend: true }))
   )
   .patch(
     ...roleGuardInCookieForVerifyRoute,

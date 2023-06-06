@@ -44,32 +44,25 @@ export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
   next();
 };
 
-export const sendVerificationToken = ({
-  resendToken
-}: {
-  resendToken: boolean;
-}): RequestHandler => {
+export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestHandler => {
   return async (req, res, next) => {
-    const userStatus = await UserTracking.findOne({ userId: res.locals.decodedJwt?.id });
-
-    if (userStatus?.isVerified) {
-      next(createError(400, "User is already verified"));
-    } else {
-      // when resend token request is received, the user must be logged in
-      // hence, user's ObjectId is available via the JWT (accessToken)
-      const partialTokenKey = resendToken
-        ? res.locals.decodedJwt.id
-        : res.locals.newSignedUpUser._id;
-
-      if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
-        memoryDB.del(`verificationToken-${partialTokenKey}`);
+    if (!res.locals.newSignedUpUser) {
+      const userStatus = await UserTracking.findOne({ userId: res.locals.decodedJwt?.id });
+      if (userStatus?.isVerified) {
+        return next(createError(400, "User is already verified"));
       }
-      const token = await nanoid();
-      const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
-      const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
-      if (cacheStatus) console.log(`Activation token: ${token}`);
-      next();
     }
+
+    const partialTokenKey = resend ? res.locals.decodedJwt.id : res.locals.newSignedUpUser._id;
+
+    if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
+      memoryDB.del(`verificationToken-${partialTokenKey}`);
+    }
+    const token = await nanoid();
+    const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
+    const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
+    if (cacheStatus) console.log(`Activation token: ${token}`);
+    next();
   };
 };
 
