@@ -3,7 +3,7 @@ import { cookiePreference } from "../settings.macro.js";
 import { issueJwt } from "../utils/jwt.util.macro.js";
 
 export const sendJwtToClient: RequestHandler = async (req, res, next) => {
-  let jwtForClient: string;
+  let jwtForClient: IDecodedJwtPayload;
   if (res.locals.jwtForSignUp) {
     jwtForClient = res.locals.jwtForSignUp;
   } else {
@@ -12,7 +12,7 @@ export const sendJwtToClient: RequestHandler = async (req, res, next) => {
         role: res.locals.allowedRoleInRoute,
         id: res.locals?.retrivedDbData?.userId
       }
-    })) as string;
+    })) as IDecodedJwtPayload;
   }
 
   res

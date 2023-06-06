@@ -82,7 +82,7 @@ export const deleteProfile: MacroMiddleware = ({ useObjectIdForQuery }) => {
     let deletionFlag;
 
     if (useObjectIdForQuery) {
-      deletionFlag = await prisma.dbModelDeterminer(req.path)?.delete({ where: { id: queryId } });
+      deletionFlag = await prisma.dbModelDeterminer(req.path).delete({ where: { id: queryId } });
     } else {
       deletionFlag = await res.locals.DbModel.delete({ where: { id: queryId } });
     }

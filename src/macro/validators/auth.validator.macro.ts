@@ -166,7 +166,7 @@ export const validateLoginCredentials = (): ValidationChain[] => {
         });
         if (retrievedUser) {
           req.res.locals.retrivedDbData = {
-            userId: retrievedUser._id,
+            userId: retrievedUser.id,
             password: retrievedUser.password
           } as IDbData;
           return true;

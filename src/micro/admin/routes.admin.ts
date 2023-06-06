@@ -26,7 +26,7 @@ adminRouter.post(
   "/signup",
   ...adminMiddlewares.adminSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
-  asyncErrorHandler(sendVerificationToken({ resendToken: false })),
+  asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
 
@@ -50,7 +50,7 @@ adminRouter
   .route("/verify")
   .get(
     ...roleGuardInCookieForVerifyRoute,
-    asyncErrorHandler(sendVerificationToken({ resendToken: true }))
+    asyncErrorHandler(sendVerificationToken({ resend: true }))
   )
   .patch(
     ...roleGuardInCookieForVerifyRoute,

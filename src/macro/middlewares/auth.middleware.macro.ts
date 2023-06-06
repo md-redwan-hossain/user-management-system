@@ -26,51 +26,76 @@ export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
     res.locals.validatedReqData.password,
     10
   );
-
+  // console.log(res.locals.validatedReqData);
   const newUserInDb = await prisma.user.create({ data: res.locals.validatedReqData });
 
   const jwtForNewUser = (await issueJwt({
     jwtPayload: { id: newUserInDb.id, role: res.locals.allowedRoleInRoute }
-  })) as string;
+  })) as IDecodedJwtPayload;
 
   if (newUserInDb && jwtForNewUser) {
     fireEventOnSignUp({ userId: newUserInDb.id, role: res.locals.allowedRoleInRoute });
     res.locals.jwtForSignUp = jwtForNewUser;
     res.locals.newSignedUpUser = newUserInDb;
   }
+
   next();
 };
 
-export const sendVerificationToken = ({
-  resendToken
-}: {
-  resendToken: boolean;
-}): RequestHandler => {
+export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestHandler => {
   return async (req, res, next) => {
-    const userStatus = await prisma.userTracker.findUnique({
-      where: { userId: res.locals.decodedJwt?.id }
-    });
-
-    if (userStatus?.isVerified) {
-      next(createError(400, "User is already verified"));
-    } else {
-      // when resend token request is received, the user must be logged in
-      // hence, user's ObjectId is available via the JWT (accessToken)
-      const partialTokenKey = resendToken
-        ? res.locals.decodedJwt.id
-        : res.locals.newSignedUpUser._id;
-
-      if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
-        memoryDB.del(`verificationToken-${partialTokenKey}`);
+    if (!res.locals.newSignedUpUser) {
+      const userStatus = await prisma.userTracker.findUnique({
+        where: { userId: res.locals.decodedJwt.id }
+      });
+      if (userStatus?.isVerified) {
+        return next(createError(400, "User is already verified"));
       }
-      const token = await nanoid();
-      const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
-      const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
-      if (cacheStatus) console.log(`Activation token: ${token}`);
-      next();
     }
+
+    const partialTokenKey = resend ? res.locals.decodedJwt.id : res.locals.newSignedUpUser.id;
+
+    if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
+      memoryDB.del(`verificationToken-${partialTokenKey}`);
+    }
+    const token = await nanoid();
+    const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
+    const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
+    if (cacheStatus) console.log(`Activation token: ${token}`);
+    next();
   };
 };
+
+// export const sendVerificationToken = ({
+//   resend
+// }: {
+//   resend: boolean;
+// }): RequestHandler => {
+//   return async (req, res, next) => {
+//     const userStatus = await prisma.userTracker.findUnique({
+//       where: { userId: res.locals.newSignedUpUser.id || res.locals.decodedJwt.id }
+//     });
+
+//     if (userStatus?.isVerified) {
+//       next(createError(400, "User is already verified"));
+//     } else {
+//       // when resend token request is received, the user must be logged in
+//       // hence, user's ObjectId is available via the JWT (accessToken)
+//       const partialTokenKey = resend
+//         ? res.locals.decodedJwt.id
+//         : res.locals.newSignedUpUser.id;
+
+//       if (memoryDB.has(`verificationToken-${partialTokenKey}`)) {
+//         memoryDB.del(`verificationToken-${partialTokenKey}`);
+//       }
+//       const token = await nanoid();
+//       const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
+//       const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
+//       if (cacheStatus) console.log(`Activation token: ${token}`);
+//       next();
+//     }
+//   };
+// };
 
 export const verifyUser: RequestHandler = async (req, res, next) => {
   const tokenKey = `verificationToken-${res.locals.decodedJwt.id}`;
@@ -96,7 +121,7 @@ export const sendFortgotPasswordToken: RequestHandler = async (req, res, next) =
   else {
     const token = await nanoid();
     if (!memoryDB.has(`forgotPasswordToken-${token}`)) {
-      const cacheStatus = memoryDB.set(`forgotPasswordToken-${token}`, userFromDb._id, 60 * 5);
+      const cacheStatus = memoryDB.set(`forgotPasswordToken-${token}`, userFromDb.id, 60 * 5);
       if (cacheStatus) {
         console.log(`Token for password reset: ${token}`);
         res.json({

@@ -108,7 +108,7 @@ declare global {
       allowedRoleInRoute: string;
       cookiePath: string;
       decodedJwt: IDecodedJwtPayload;
-      jwtForSignUp: string;
+      jwtForSignUp: IDecodedJwtPayload;
       newSignedUpUser;
     }
   }

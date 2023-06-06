@@ -26,7 +26,7 @@ supportStuffRouter.post(
   "/signup",
   ...supportStuffMiddlewares.supportStuffSignUpDataValidation,
   asyncErrorHandler(saveInDbOnSignUp),
-  asyncErrorHandler(sendVerificationToken({ resendToken: false })),
+  asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
 
@@ -50,7 +50,7 @@ supportStuffRouter
   .route("/verify")
   .get(
     ...roleGuardInCookieForVerifyRoute,
-    asyncErrorHandler(sendVerificationToken({ resendToken: true }))
+    asyncErrorHandler(sendVerificationToken({ resend: true }))
   )
   .patch(
     ...roleGuardInCookieForVerifyRoute,

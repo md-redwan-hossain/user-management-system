@@ -77,9 +77,11 @@ export const memoryDB: NodeCache = new NodeCache();
 // DB connection
 class ExtendedPrismaClient extends PrismaClient {
   dbModelDeterminer(reqPath: string) {
+    let model;
     const [, requestedPath] = reqPath.split("/");
-    if (requestedPath === "users") return this.user;
-    if (requestedPath === "support-stuffs") return this.supportStuff;
+    if (requestedPath === "users") model = this.user;
+    if (requestedPath === "support-stuffs") model = this.supportStuff;
+    return model;
   }
 }
 
