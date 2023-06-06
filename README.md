@@ -3,7 +3,9 @@
 - Full MVC pattern with modularity that ensures maximum resue of code, maintaining DRY principle.
 - Iron strong server side validation.
 - In memory cache for repetitive database queries.
-- Api rate limitting.
+- Api rate limitting is implemented for stopping abuse.
+- Supports advanced query with mongoDb operators in the query param.
+- limit-offset based pagination with in memory cache.
 - JWT based stateless auth flow with Role-based access control (RBAC).
 - Centralized error handling for production and development.
 - async code for potential blocking tasks, so no blocking of the event loop.
