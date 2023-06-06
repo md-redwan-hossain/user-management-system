@@ -11,8 +11,7 @@ import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.m
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
 import { mongoIdValidation } from "../../macro/middlewares/routeParam.middleware.macro.js";
 import { roleGuardInCookie, roleGuardInCookieForVerifyRoute } from "../../macro/roleGuard.macro.js";
-import { supportStuffDataUpdateValidation } from "../supportStuff/middlewares.supportStuff.js";
-import { userDataUpdateValidation } from "../user/middlewares.user.js";
+import { SupportStuff } from "../supportStuff/models.supportStuff.js";
 import { User } from "../user/models.user.js";
 import { getAllSupportStuffs, getAllUsers } from "./controllers.admin.js";
 import * as adminMiddlewares from "./middlewares.admin.js";
@@ -105,7 +104,7 @@ adminRouter
   .route("/support-stuffs")
   .get(
     ...roleGuardInCookie,
-    macroCrudMiddlewares.paginationDataMemoizer("totalSupportStuffsinMemoryDB", User),
+    macroCrudMiddlewares.paginationDataMemoizer("totalSupportStuffsinMemoryDB", SupportStuff),
     asyncErrorHandler(getAllSupportStuffs)
   );
 
