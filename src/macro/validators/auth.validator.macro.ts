@@ -1,7 +1,5 @@
 import bcrypt from "bcrypt";
 import { ValidationChain, body, header } from "express-validator";
-import { UserTracking } from "../../micro/admin/models.admin.js";
-import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
 import { makeFieldOptional } from "../utils/expressValidator.util.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 import {
@@ -239,7 +237,7 @@ export const passwordResetValidator = (): ValidationChain[] => {
         );
         if (isSameAsOldPassword) throw new Error("newPassword is same as Old password");
         else {
-          retrievedUser.password = newPasswordInReq;
+          retrievedUser.password = await bcrypt.hash(newPasswordInReq, 10);
           await retrievedUser.save();
           return true;
         }
