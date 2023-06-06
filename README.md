@@ -16,6 +16,8 @@
 
 - Setup Dependencies: `npm install`
 
+- Init prisma: `npx prisma generate`
+
 - Start development server: `npm run dev`
 
 - Rename the `sample.env` file to `.env` and set value to the variables with proper credentials.
