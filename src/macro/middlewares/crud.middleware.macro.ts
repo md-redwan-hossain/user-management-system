@@ -17,6 +17,7 @@ export const paginationDataMemoizer = (key: string, DbModel: Model<IUser>): Requ
     }
   };
 };
+
 export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
   return async (req, res, next) => {
     const queryId = useObjectIdForQuery
@@ -27,7 +28,7 @@ export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
 
     if (useObjectIdForQuery) {
       userDataFromDB = await dbModelDeterminer(req.path)
-        ?.findById(queryId)
+        .findById(queryId)
         .select(excludeDataCommon);
     } else {
       userDataFromDB = await res.locals.DbModel.findById(queryId).select(excludeDataCommon);
