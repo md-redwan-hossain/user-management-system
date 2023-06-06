@@ -22,6 +22,14 @@ declare global {
 
   type CustomValidationChain = ({ isOptional }: { isOptional: boolean }) => ValidationChain[];
 
+  type CustomValidationChainCredential = ({
+    isOptional,
+    useForUpdateByOtherUser
+  }: {
+    isOptional: boolean;
+    useForUpdateByOtherUser: boolean;
+  }) => ValidationChain[];
+
   type IdentityValidationChain = ({
     isOptional,
     uniqueConstraint,

@@ -27,9 +27,9 @@ export const nonExistenceRouteHandler: RequestHandler = (req, res, next): void =
 };
 
 export const asyncErrorHandler = (originalAsyncMiddleware: RequestHandler): RequestHandler => {
-  return function (req, res, next): void {
+  return async function (req, res, next): Promise<void> {
     try {
-      originalAsyncMiddleware(req, res, next);
+      await Promise.resolve(originalAsyncMiddleware(req, res, next));
     } catch (err) {
       next(err);
     }

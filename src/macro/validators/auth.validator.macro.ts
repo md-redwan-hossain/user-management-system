@@ -79,7 +79,10 @@ export const validatePassword: CustomValidationChain = ({ isOptional }) => {
   ];
 };
 
-export const validateChangePassword: CustomValidationChain = ({ isOptional }) => {
+export const validateChangePassword: CustomValidationChainCredential = ({
+  isOptional,
+  useForUpdateByOtherUser
+}) => {
   return [
     makeFieldOptional({ optionalFlag: isOptional, field: "updatePassword" })[0]
       .custom((data: IPasswordUpdateData) => {
@@ -109,10 +112,16 @@ export const validateChangePassword: CustomValidationChain = ({ isOptional }) =>
       })
       .bail()
       .custom(async (data: IPasswordUpdateData, { req }): Promise<boolean> => {
-        const { password: oldPasswordInDb } = await req.res.locals.DbModel.findById(
-          req.res.locals.userId
-        );
-        const isValidOldPassword: boolean = await bcrypt.compare(data.oldPassword, oldPasswordInDb);
+        let user;
+        if (!useForUpdateByOtherUser) {
+          user = await req.res.locals.DbModel.findById(req.res.locals.userId);
+        } else {
+          user = await dbModelDeterminer(req.path).findOne({
+            _id: req.res.locals.validatedReqData.userId
+          });
+        }
+        if (!user) throw new Error("No user found");
+        const isValidOldPassword: boolean = await bcrypt.compare(data.oldPassword, user.password);
         if (isValidOldPassword) return true;
         throw new Error("Old password does not matched with Database");
       })
@@ -168,14 +177,6 @@ export const validateLoginCredentials = (): ValidationChain[] => {
         throw new Error("No user found with the given email.");
       })
       .bail()
-      // .custom(async (_, { req }): Promise<boolean> => {
-      //   req.res.locals.userStatus = await UserTracking.findOne({
-      //     userId: req.res.locals.retrivedDbData?.userId
-      //   });
-      //   if (!req.res.locals.userStatus?.isVerified) throw new Error("User is not verified");
-      //   else return true;
-      // })
-      // .bail()
       .custom(async (data: ILoginData, { req }): Promise<boolean> => {
         const isValidPassword = await bcrypt.compare(
           data.password,
