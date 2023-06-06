@@ -1,10 +1,16 @@
-import { SupportStuff } from "../../micro/supportStuff/models.supportStuff.js";
-import { User } from "../../micro/user/models.user.js";
+// import { PrismaClient } from "@prisma/client";
 
-export function dbModelDeterminer(reqPath: Array<string> | string) {
-  const [, requestedPath] = (reqPath as string).split("/");
-  let DbModelForQuery;
-  if (requestedPath === "users") DbModelForQuery = User;
-  else if (requestedPath === "support-stuffs") DbModelForQuery = SupportStuff;
-  return DbModelForQuery;
-}
+// const prisma = new PrismaClient();
+
+// export function dbModelDeterminer(reqPath: string) {
+//   const [, requestedPath] = reqPath.split("/");
+//   if (requestedPath === "users") return prisma.user;
+//   if (requestedPath === "support-stuffs") return prisma.supportStuff;
+// }
+
+// /*
+
+// how can I use this dbModelDeterminer function like:
+// await prisma.dbModelDeterminer(req.path).findUnique{}
+
+// */

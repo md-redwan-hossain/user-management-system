@@ -2,8 +2,7 @@ import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { nanoid } from "nanoid/async";
-import { UserTracking } from "../../micro/admin/models.admin.js";
-import { cookiePreference, memoryDB } from "../settings.macro.js";
+import { cookiePreference, memoryDB, prisma } from "../settings.macro.js";
 import { fireEventOnSignUp } from "../utils/eventsPublisher.utils.macro.js";
 import futureTime from "../utils/futureTime.util.macro.js";
 import { issueJwt } from "../utils/jwt.util.macro.js";
@@ -28,18 +27,16 @@ export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
     10
   );
 
-  const newUser = new res.locals.DbModel(res.locals.validatedReqData);
+  const newUserInDb = await prisma.user.create({ data: res.locals.validatedReqData });
 
   const jwtForNewUser = (await issueJwt({
-    jwtPayload: { id: newUser._id, role: res.locals.allowedRoleInRoute }
+    jwtPayload: { id: newUserInDb.id, role: res.locals.allowedRoleInRoute }
   })) as string;
 
-  const newUserInDb = await newUser.save();
-
   if (newUserInDb && jwtForNewUser) {
-    fireEventOnSignUp({ userId: newUser._id, role: res.locals.allowedRoleInRoute });
+    fireEventOnSignUp({ userId: newUserInDb.id, role: res.locals.allowedRoleInRoute });
     res.locals.jwtForSignUp = jwtForNewUser;
-    res.locals.newSignedUpUser = newUser;
+    res.locals.newSignedUpUser = newUserInDb;
   }
   next();
 };
@@ -50,7 +47,9 @@ export const sendVerificationToken = ({
   resendToken: boolean;
 }): RequestHandler => {
   return async (req, res, next) => {
-    const userStatus = await UserTracking.findOne({ userId: res.locals.decodedJwt?.id });
+    const userStatus = await prisma.userTracker.findUnique({
+      where: { userId: res.locals.decodedJwt?.id }
+    });
 
     if (userStatus?.isVerified) {
       next(createError(400, "User is already verified"));
@@ -79,10 +78,10 @@ export const verifyUser: RequestHandler = async (req, res, next) => {
     const tokenInCache = memoryDB.get(tokenKey) as ValidationTokenValue;
 
     if (tokenInCache.token === res.locals.validatedReqData.verificationtoken) {
-      res.locals.userStatus = await UserTracking.findOneAndUpdate(
-        { userId: tokenInCache.userId },
-        { isVerified: true }
-      );
+      res.locals.userStatus = await prisma.userTracker.update({
+        where: { userId: tokenInCache.userId },
+        data: { isVerified: true }
+      });
       memoryDB.del(tokenKey);
       res.status(200).json({ status: "success", message: "User is activated" });
     } else next(createError(400, "verificationToken not matched"));
@@ -90,7 +89,9 @@ export const verifyUser: RequestHandler = async (req, res, next) => {
 };
 
 export const sendFortgotPasswordToken: RequestHandler = async (req, res, next) => {
-  const userFromDb = await res.locals.DbModel.findOne({ email: res.locals.validatedReqData.email });
+  const userFromDb = await res.locals.DbModel.findUnique({
+    where: { email: res.locals.validatedReqData.email }
+  });
   if (!userFromDb) next(createError(404, "User not found"));
   else {
     const token = await nanoid();

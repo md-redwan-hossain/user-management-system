@@ -1,6 +1,6 @@
+import { Admin, SupportStuff, User } from "@prisma/client";
 import { RequestHandler } from "express";
 import { ValidationChain } from "express-validator";
-import mongoose, { Document, Model } from "mongoose";
 
 declare global {
   type MicroValidator = ({ useForUpdate }: { useForUpdate: boolean }) => Array<ValidationChain[]>;
@@ -14,7 +14,7 @@ declare global {
   }) => ValidationChain[];
 
   type ValidationTokenValue = {
-    userId: mongoose.Types.ObjectId | string;
+    userId: string;
     token: string;
   };
 
@@ -64,7 +64,7 @@ declare global {
 
   interface IRoleModelCookiePathInjector {
     role: string;
-    DbModel: Model<IUser>;
+    DbModel;
     cookiePath: string;
   }
 
@@ -94,19 +94,6 @@ declare global {
     isDeactivated?: boolean;
   }
 
-  interface IUser extends Document {
-    _id: mongoose.Types.ObjectId;
-    fullName: string;
-    email: string;
-    password: string;
-    dateOfBirth: Date;
-    gender: string;
-    bio?: string;
-    createdAt: Date;
-    updatedAt: Date;
-    role: string;
-  }
-
   namespace Express {
     interface Locals {
       sortingData: any;
@@ -122,7 +109,13 @@ declare global {
       cookiePath: string;
       decodedJwt: IDecodedJwtPayload;
       jwtForSignUp: string;
-      newSignedUpUser: IUser;
+      newSignedUpUser;
+    }
+  }
+
+  namespace Prisma {
+    interface PrismaClient {
+      dbModelDeterminer(reqPath: string): SupportStuff | User | undefined;
     }
   }
 }

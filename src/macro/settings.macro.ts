@@ -1,3 +1,4 @@
+import { PrismaClient, SupportStuff, User } from "@prisma/client";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import "dotenv/config";
@@ -5,13 +6,15 @@ import express, { CookieOptions, RequestHandler } from "express";
 import { ValidationChain } from "express-validator";
 import helmet from "helmet";
 import createError from "http-errors";
-import mongoose from "mongoose";
 import morgan from "morgan";
 import NodeCache from "node-cache";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { sanitizeAndSeparateSortAndLimit } from "./middlewares/queryParam.middleware.macro.js";
 import futureTime from "./utils/futureTime.util.macro.js";
 
+interface CustomPrismaClient extends PrismaClient {
+  dbModelDeterminer(reqPath: string): User | SupportStuff | undefined;
+}
 // ensuring env variables
 if (!process.env.MONGODB_URL) throw new Error("MongoDB Connection URL is missing");
 if (!process.env.JWT_SECRET) throw Error("Set JWT_SECRET in ENV variable");
@@ -72,8 +75,12 @@ export function cookiePreference({
 export const memoryDB: NodeCache = new NodeCache();
 
 // DB connection
-export async function initDatabase(): Promise<void> {
-  console.log("Connecting to DB...");
-  await mongoose.connect(mongoConnectionUrl);
-  console.log("DB is connected");
+class ExtendedPrismaClient extends PrismaClient {
+  dbModelDeterminer(reqPath: string) {
+    const [, requestedPath] = reqPath.split("/");
+    if (requestedPath === "users") return this.user;
+    if (requestedPath === "support-stuffs") return this.supportStuff;
+  }
 }
+
+export const prisma: ExtendedPrismaClient = new ExtendedPrismaClient();

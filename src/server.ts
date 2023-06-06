@@ -1,6 +1,5 @@
 import express, { Application } from "express";
 import { Server } from "http";
-import mongoose from "mongoose";
 import * as macroErrorHandlers from "./macro/errorHandler.macro.js";
 import apiRouterV1 from "./macro/routes.macro.js";
 import { globalMiddlewares, initDatabase, serverPort } from "./macro/settings.macro.js";
@@ -33,12 +32,12 @@ initDatabase()
       macroErrorHandlers.uncaughtPromiseRejectionHandler(nodeWebServer)
     );
 
-    mongoose.connection.on("error", (err) => {
-      console.error(`Non-Initial DB Error --> ${err}`);
-      nodeWebServer.close(() => {
-        console.log("Server is closed");
-      });
-    });
+    // mongoose.connection.on("error", (err) => {
+    //   console.error(`Non-Initial DB Error --> ${err}`);
+    //   nodeWebServer.close(() => {
+    //     console.log("Server is closed");
+    //   });
+    // });
   })
   .catch((err) => {
     console.error(`Initial DB Error --> ${err}`);

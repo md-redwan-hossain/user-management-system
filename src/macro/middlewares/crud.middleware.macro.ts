@@ -1,36 +1,37 @@
 import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
-import { Model } from "mongoose";
-import { UserTracking } from "../../micro/admin/models.admin.js";
-import { memoryDB } from "../settings.macro.js";
-import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
-import { excludeDataCommon } from "../utils/mongoose.util.macro.js";
+import { memoryDB, prisma } from "../settings.macro.js";
 
-export const paginationDataMemoizer = (key: string, DbModel: Model<IUser>): RequestHandler => {
+export const paginationDataMemoizer = (key: string, DbModel): RequestHandler => {
   return async (req, res, next): Promise<void> => {
     if (memoryDB.get(key)) next();
     else {
-      const tempData = await DbModel.countDocuments();
+      const tempData = await DbModel.count();
       memoryDB.set(key, tempData);
       next();
     }
   };
 };
+
 export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
   return async (req, res, next) => {
     const queryId = useObjectIdForQuery
       ? res.locals.validatedReqData.userId
       : res.locals.decodedJwt.id;
 
-    let userDataFromDB: null | IUser;
+    let userDataFromDB;
 
     if (useObjectIdForQuery) {
-      userDataFromDB = await dbModelDeterminer(req.path)
-        .findById(queryId)
-        .select(excludeDataCommon);
+      userDataFromDB = await prisma.dbModelDeterminer(req.path)?.findUnique({
+        where: { id: queryId },
+        select: { password: false }
+      });
     } else {
-      userDataFromDB = await res.locals.DbModel.findById(queryId).select(excludeDataCommon);
+      userDataFromDB = await res.locals.DbModel.findUnique({
+        where: { id: queryId },
+        select: { password: false }
+      });
     }
 
     if (!userDataFromDB) next(createError(404, "User not found"));
@@ -50,21 +51,18 @@ export const updateProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
       ? res.locals.validatedReqData.userId
       : res.locals.decodedJwt.id;
 
-    let updatedUserDataFromDB: null | IUser;
+    let updatedUserDataFromDB;
 
     if (useObjectIdForQuery) {
-      updatedUserDataFromDB = await dbModelDeterminer(req.path)
-        .findByIdAndUpdate(queryId, res.locals.validatedReqData, {
-          new: true,
-          runValidators: true
-        })
-        .select(excludeDataCommon);
+      updatedUserDataFromDB = await prisma.dbModelDeterminer(req.path)?.update({
+        where: { id: queryId },
+        data: res.locals.validatedReqData
+      });
     } else {
-      updatedUserDataFromDB = await res.locals.DbModel.findByIdAndUpdate(
-        queryId,
-        res.locals.validatedReqData,
-        { new: true, runValidators: true }
-      ).select(excludeDataCommon);
+      updatedUserDataFromDB = await res.locals.DbModel.update({
+        where: { id: queryId },
+        data: res.locals.validatedReqData
+      });
     }
     if (updatedUserDataFromDB) {
       res.status(200).json({
@@ -81,17 +79,17 @@ export const deleteProfile: MacroMiddleware = ({ useObjectIdForQuery }) => {
       ? res.locals.validatedReqData.userId
       : res.locals.decodedJwt.id;
 
-    let deletionFlag: null | IUser;
+    let deletionFlag;
 
     if (useObjectIdForQuery) {
-      deletionFlag = await dbModelDeterminer(req.path).findByIdAndDelete(queryId);
+      deletionFlag = await prisma.dbModelDeterminer(req.path)?.delete({ where: { id: queryId } });
     } else {
-      deletionFlag = await res.locals.DbModel.findByIdAndDelete(queryId);
+      deletionFlag = await res.locals.DbModel.delete({ where: { id: queryId } });
     }
 
     if (!deletionFlag) next(createError(404, "User not found"));
     else {
-      await UserTracking.findOneAndDelete({ userId: queryId });
+      await prisma.userTracker.delete({ where: { userId: queryId } });
       if (useObjectIdForQuery) res.status(204).end();
       else res.status(204).clearCookie("accessToken", { path: res.locals.cookiePath }).end();
     }
