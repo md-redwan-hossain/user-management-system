@@ -16,7 +16,7 @@
 
 - Setup Dependencies: `npm install`
 
-- Init prisma: `npx prisma generate`
+- Init prisma schema: `npx prisma generate`
 
 - Start development server: `npm run dev`
 
