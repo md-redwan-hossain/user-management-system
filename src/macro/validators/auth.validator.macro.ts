@@ -239,7 +239,7 @@ export const passwordResetValidator = (): ValidationChain[] => {
         );
         if (isSameAsOldPassword) throw new Error("newPassword is same as Old password");
         else {
-          retrievedUser.password = newPasswordInReq;
+          retrievedUser.password = await bcrypt.hash(newPasswordInReq, 10);
           await retrievedUser.save();
           return true;
         }
