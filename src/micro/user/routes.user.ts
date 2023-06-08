@@ -1,11 +1,10 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
-    saveInDbOnSignUp,
-    sendFortgotPasswordToken,
-    sendResetPasswordCookie,
-    sendVerificationToken,
-    verifyUser
+  sendFortgotPasswordToken,
+  sendResetPasswordCookie,
+  sendVerificationToken,
+  verifyUser
 } from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
@@ -23,7 +22,7 @@ userRouter.post(
 userRouter.post(
   "/signup",
   ...userMiddlewares.userSignUpDataValidation,
-  asyncErrorHandler(saveInDbOnSignUp),
+  asyncErrorHandler(macroCrudMiddlewares.createUser),
   asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
@@ -58,16 +57,16 @@ userRouter
   .route("/profile")
   .get(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: false }))
   )
   .patch(
     ...roleGuardInCookie,
     ...userMiddlewares.userDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: false }))
   )
   .delete(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: false }))
   );
 
 export default userRouter;

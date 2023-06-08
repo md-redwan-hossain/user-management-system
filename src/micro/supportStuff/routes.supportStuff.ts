@@ -1,11 +1,10 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
-    saveInDbOnSignUp,
-    sendFortgotPasswordToken,
-    sendResetPasswordCookie,
-    sendVerificationToken,
-    verifyUser
+  sendFortgotPasswordToken,
+  sendResetPasswordCookie,
+  sendVerificationToken,
+  verifyUser
 } from "../../macro/middlewares/auth.middleware.macro.js";
 import * as macroCrudMiddlewares from "../../macro/middlewares/crud.middleware.macro.js";
 import { sendJwtToClient } from "../../macro/middlewares/jwt.middleware.macro.js";
@@ -25,7 +24,7 @@ supportStuffRouter.post(
 supportStuffRouter.post(
   "/signup",
   ...supportStuffMiddlewares.supportStuffSignUpDataValidation,
-  asyncErrorHandler(saveInDbOnSignUp),
+  asyncErrorHandler(macroCrudMiddlewares.createUser),
   asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
@@ -34,16 +33,16 @@ supportStuffRouter
   .route("/profile")
   .get(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: false }))
   )
   .patch(
     ...roleGuardInCookie,
     ...supportStuffMiddlewares.supportStuffDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: false }))
   )
   .delete(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: false }))
   );
 
 supportStuffRouter
@@ -88,18 +87,18 @@ supportStuffRouter
   .get(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: true }))
   )
   .patch(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
     ...supportStuffMiddlewares.supportStuffOtherUserDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: true }))
   )
   .delete(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: true }))
   );
 
 export default supportStuffRouter;

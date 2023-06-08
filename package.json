@@ -29,6 +29,7 @@
     "nanoid": "^4.0.2",
     "node-cache": "^5.1.2",
     "nodemailer": "^6.9.3",
+    "nodemailer-mailgun-transport": "^2.1.5",
     "rate-limiter-flexible": "^2.4.1",
     "validator": "^13.9.0"
   },
@@ -44,6 +45,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "^20.2.5",
     "@types/nodemailer": "^6.4.8",
+    "@types/nodemailer-mailgun-transport": "^1.4.3",
     "@types/validator": "^13.7.17",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
     "@typescript-eslint/parser": "^5.59.8",

@@ -1,10 +1,9 @@
-import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { nanoid } from "nanoid/async";
 import { UserTracking } from "../../micro/admin/models.admin.js";
 import { cookiePreference, memoryDB } from "../settings.macro.js";
-import { fireEventOnSignUp } from "../utils/eventsPublisher.utils.macro.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../utils/email.utils.macro.js";
 import futureTime from "../utils/futureTime.util.macro.js";
 import { issueJwt } from "../utils/jwt.util.macro.js";
 
@@ -19,29 +18,6 @@ export const roleModelCookiePathInjector = ({
     res.locals.cookiePath = cookiePath;
     next();
   };
-};
-
-export const saveInDbOnSignUp: RequestHandler = async (req, res, next) => {
-  // hash the given password in the request
-  res.locals.validatedReqData.password = await bcrypt.hash(
-    res.locals.validatedReqData.password,
-    10
-  );
-
-  const newUser = new res.locals.DbModel(res.locals.validatedReqData);
-
-  const jwtForNewUser = (await issueJwt({
-    jwtPayload: { id: newUser._id, role: res.locals.allowedRoleInRoute }
-  })) as string;
-
-  const newUserInDb = await newUser.save();
-
-  if (newUserInDb && jwtForNewUser) {
-    fireEventOnSignUp({ userId: newUser._id, role: res.locals.allowedRoleInRoute });
-    res.locals.jwtForSignUp = jwtForNewUser;
-    res.locals.newSignedUpUser = newUser;
-  }
-  next();
 };
 
 export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestHandler => {
@@ -60,12 +36,13 @@ export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestH
     }
     const token = await nanoid();
     const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
-    const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 60);
-    if (cacheStatus) console.log(`Activation token: ${token}`);
+    const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 15);
+    if (cacheStatus)
+      await sendVerificationEmail({ receiver: res.locals.newSignedUpUser.email, token });
     if (resend) {
       res.status(200).json({
         status: "success",
-        message: "Check for activation token in your email within 1 hour"
+        message: "Check for activation token in your email within 15 minute"
       });
     } else {
       next();
@@ -97,7 +74,7 @@ export const sendFortgotPasswordToken: RequestHandler = async (req, res, next) =
     if (!memoryDB.has(`forgotPasswordToken-${token}`)) {
       const cacheStatus = memoryDB.set(`forgotPasswordToken-${token}`, userFromDb._id, 60 * 5);
       if (cacheStatus) {
-        console.log(`Token for password reset: ${token}`);
+        await sendPasswordResetEmail({ receiver: res.locals.newSignedUpUser.email, token });
         res.json({
           status: "success",
           message: "Check for password reset token in your email within 5 minute"

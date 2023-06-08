@@ -5,6 +5,8 @@ import { Model } from "mongoose";
 import { UserTracking } from "../../micro/admin/models.admin.js";
 import { memoryDB } from "../settings.macro.js";
 import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
+import { fireEventOnSignUp } from "../utils/eventsPublisher.utils.macro.js";
+import { issueJwt } from "../utils/jwt.util.macro.js";
 import { excludeDataCommon } from "../utils/mongoose.util.macro.js";
 
 export const paginationDataMemoizer = (key: string, DbModel: Model<IUser>): RequestHandler => {
@@ -18,7 +20,30 @@ export const paginationDataMemoizer = (key: string, DbModel: Model<IUser>): Requ
   };
 };
 
-export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
+export const createUser: RequestHandler = async (req, res, next) => {
+  // hash the given password in the request
+  res.locals.validatedReqData.password = await bcrypt.hash(
+    res.locals.validatedReqData.password,
+    10
+  );
+
+  const newUser = new res.locals.DbModel(res.locals.validatedReqData);
+
+  const jwtForNewUser = (await issueJwt({
+    jwtPayload: { id: newUser._id, role: res.locals.allowedRoleInRoute }
+  })) as string;
+
+  const newUserInDb = await newUser.save();
+
+  if (newUserInDb && jwtForNewUser) {
+    fireEventOnSignUp({ userId: newUser._id, role: res.locals.allowedRoleInRoute });
+    res.locals.jwtForSignUp = jwtForNewUser;
+    res.locals.newSignedUpUser = newUser;
+  }
+  next();
+};
+
+export const getUser: MacroMiddleware = ({ useObjectIdForQuery }) => {
   return async (req, res, next) => {
     const queryId = useObjectIdForQuery
       ? res.locals.validatedReqData.userId
@@ -39,7 +64,7 @@ export const getProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
   };
 };
 
-export const updateProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
+export const updateUser: MacroMiddleware = ({ useObjectIdForQuery }) => {
   return async (req, res, next) => {
     if (res.locals.validatedReqData.updatePassword?.newPassword) {
       res.locals.validatedReqData.password = await bcrypt.hash(
@@ -76,7 +101,7 @@ export const updateProfileData: MacroMiddleware = ({ useObjectIdForQuery }) => {
   };
 };
 
-export const deleteProfile: MacroMiddleware = ({ useObjectIdForQuery }) => {
+export const deleteUser: MacroMiddleware = ({ useObjectIdForQuery }) => {
   return async (req, res, next) => {
     const queryId = useObjectIdForQuery
       ? res.locals.validatedReqData.userId

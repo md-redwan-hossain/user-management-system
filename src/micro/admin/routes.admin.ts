@@ -1,7 +1,6 @@
 import express, { Router } from "express";
 import { asyncErrorHandler } from "../../macro/errorHandler.macro.js";
 import {
-  saveInDbOnSignUp,
   sendFortgotPasswordToken,
   sendResetPasswordCookie,
   sendVerificationToken,
@@ -26,7 +25,7 @@ adminRouter.post(
 adminRouter.post(
   "/signup",
   ...adminMiddlewares.adminSignUpDataValidation,
-  asyncErrorHandler(saveInDbOnSignUp),
+  asyncErrorHandler(macroCrudMiddlewares.createUser),
   asyncErrorHandler(sendVerificationToken({ resend: false })),
   asyncErrorHandler(sendJwtToClient)
 );
@@ -35,16 +34,16 @@ adminRouter
   .route("/profile")
   .get(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: false }))
   )
   .patch(
     ...roleGuardInCookie,
     ...adminMiddlewares.adminDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: false }))
   )
   .delete(
     ...roleGuardInCookie,
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: false }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: false }))
   );
 
 adminRouter
@@ -86,18 +85,18 @@ adminRouter
   .get(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: true }))
   )
   .patch(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
     ...adminMiddlewares.adminOtherUserDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: true }))
   )
   .delete(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: true }))
   );
 
 adminRouter
@@ -113,18 +112,18 @@ adminRouter
   .get(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.getProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.getUser({ useObjectIdForQuery: true }))
   )
   .patch(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
     ...adminMiddlewares.adminOtherUserDataUpdateValidation,
-    asyncErrorHandler(macroCrudMiddlewares.updateProfileData({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.updateUser({ useObjectIdForQuery: true }))
   )
   .delete(
     ...roleGuardInCookie,
     ...mongoIdValidation({ routeParamName: "userId" }),
-    asyncErrorHandler(macroCrudMiddlewares.deleteProfile({ useObjectIdForQuery: true }))
+    asyncErrorHandler(macroCrudMiddlewares.deleteUser({ useObjectIdForQuery: true }))
   );
 
 export default adminRouter;

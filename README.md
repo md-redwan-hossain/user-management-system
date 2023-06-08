@@ -16,9 +16,9 @@
 
 - Setup Dependencies: `npm install`
 
-- Start development server: `npm run dev`
-
 - Rename the `sample.env` file to `.env` and set value to the variables with proper credentials.
+
+- Start development server: `npm run dev`
 
 - `MONGODB_URL="mongodb://admin:admin@localhost:27020/ums"`
 
