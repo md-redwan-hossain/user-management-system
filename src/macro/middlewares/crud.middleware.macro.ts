@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { Model } from "mongoose";
-import { UserTracking } from "../../micro/admin/models.admin.js";
+import { UserTracker } from "../../micro/admin/models.admin.js";
 import { memoryDB } from "../settings.macro.js";
 import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
 import { fireEventOnSignUp } from "../utils/eventsPublisher.utils.macro.js";
@@ -36,7 +36,11 @@ export const createUser: RequestHandler = async (req, res, next) => {
   const newUserInDb = await newUser.save();
 
   if (newUserInDb && jwtForNewUser) {
-    fireEventOnSignUp({ userId: newUser._id, role: res.locals.allowedRoleInRoute });
+    fireEventOnSignUp({
+      userId: newUser._id,
+      email: newUser.email,
+      role: res.locals.allowedRoleInRoute
+    });
     res.locals.jwtForSignUp = jwtForNewUser;
     res.locals.newSignedUpUser = newUser;
   }
@@ -117,7 +121,7 @@ export const deleteUser: MacroMiddleware = ({ useObjectIdForQuery }) => {
 
     if (!deletionFlag) next(createError(404, "User not found"));
     else {
-      await UserTracking.findOneAndDelete({ userId: queryId });
+      await UserTracker.findOneAndDelete({ userId: queryId });
       if (useObjectIdForQuery) res.status(204).end();
       else res.status(204).clearCookie("accessToken", { path: res.locals.cookiePath }).end();
     }

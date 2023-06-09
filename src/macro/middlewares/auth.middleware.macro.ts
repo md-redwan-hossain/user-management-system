@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 import createError from "http-errors";
 import { nanoid } from "nanoid/async";
-import { UserTracking } from "../../micro/admin/models.admin.js";
-import { cookiePreference, memoryDB } from "../settings.macro.js";
+import { UserTracker } from "../../micro/admin/models.admin.js";
+import { bullmqQueue, cookiePreference, memoryDB } from "../settings.macro.js";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../utils/email.utils.macro.js";
 import futureTime from "../utils/futureTime.util.macro.js";
 import { issueJwt } from "../utils/jwt.util.macro.js";
@@ -22,11 +22,15 @@ export const roleModelCookiePathInjector = ({
 
 export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestHandler => {
   return async (req, res, next) => {
-    if (!res.locals.newSignedUpUser) {
-      const userStatus = await UserTracking.findOne({ userId: res.locals.decodedJwt?.id });
-      if (userStatus?.isVerified) {
-        return next(createError(400, "User is already verified"));
-      }
+    let userEmail;
+    if (resend) {
+      const userStatus = await UserTracker.findOne({ userId: res.locals.decodedJwt?.id });
+      if (userStatus?.isVerified) return next(createError(400, "User is already verified"));
+      userEmail = userStatus?.email;
+      console.log(res.locals.validatedReqData);
+      console.log(userEmail);
+      if (res.locals.validatedReqData.email !== userEmail)
+        return next(createError(400, "Invalid Email"));
     }
 
     const partialTokenKey = resend ? res.locals.decodedJwt.id : res.locals.newSignedUpUser._id;
@@ -37,8 +41,15 @@ export const sendVerificationToken = ({ resend }: { resend: boolean }): RequestH
     const token = await nanoid();
     const tokenValue: ValidationTokenValue = { userId: partialTokenKey, token };
     const cacheStatus = memoryDB.set(`verificationToken-${partialTokenKey}`, tokenValue, 60 * 15);
-    if (cacheStatus)
-      await sendVerificationEmail({ receiver: res.locals.newSignedUpUser.email, token });
+    if (cacheStatus) {
+      await bullmqQueue.add(
+        `verificationToken-${partialTokenKey}`,
+        sendVerificationEmail({
+          receiver: userEmail || res.locals.newSignedUpUser.email,
+          token
+        })
+      );
+    }
     if (resend) {
       res.status(200).json({
         status: "success",
@@ -56,7 +67,7 @@ export const verifyUser: RequestHandler = async (req, res, next) => {
     const tokenInCache = memoryDB.get(tokenKey) as ValidationTokenValue;
 
     if (tokenInCache.token === res.locals.validatedReqData.verificationtoken) {
-      res.locals.userStatus = await UserTracking.findOneAndUpdate(
+      res.locals.userStatus = await UserTracker.findOneAndUpdate(
         { userId: tokenInCache.userId },
         { isVerified: true }
       );

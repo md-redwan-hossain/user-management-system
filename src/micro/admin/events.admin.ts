@@ -1,15 +1,23 @@
 import { EventEmitter } from "node:events";
 
 import mongoose from "mongoose";
-import { UserTracking } from "./models.admin.js";
+import { UserTracker } from "./models.admin.js";
 
 const adminEvent = new EventEmitter();
 
 adminEvent.addListener(
   "newUserSignUp",
-  async ({ userId, role }: { userId: mongoose.Types.ObjectId; role: string }) => {
+  async ({
+    userId,
+    email,
+    role
+  }: {
+    userId: mongoose.Types.ObjectId;
+    email: string;
+    role: string;
+  }) => {
     try {
-      const newUser = new UserTracking({ userId, role });
+      const newUser = new UserTracker({ userId, email, role });
       await newUser.save();
     } catch (err) {
       console.error(err);

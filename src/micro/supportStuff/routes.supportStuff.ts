@@ -66,7 +66,7 @@ supportStuffRouter.post(
 supportStuffRouter
   .route("/reset-password")
   .get(
-    ...supportStuffMiddlewares.supportStuffForgotPasswordTokenValidation,
+    ...supportStuffMiddlewares.supportStuffForgotPasswordRequestOrResendVerificationTokenValidation,
     asyncErrorHandler(sendResetPasswordCookie)
   )
   .patch(

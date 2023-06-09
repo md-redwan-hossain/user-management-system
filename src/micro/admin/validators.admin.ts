@@ -1,8 +1,8 @@
 import { conditonalValidationChainElem } from "../../macro/utils/expressValidator.util.macro.js";
 import {
-  validateChangePassword,
-  validateEmail,
-  validateSignUpCredentials
+    validateChangePassword,
+    validateEmail,
+    validateSignUpCredentials
 } from "../../macro/validators/auth.validator.macro.js";
 import * as macroPersonalDataValidators from "../../macro/validators/personalData.validator.macro.js";
 
@@ -14,7 +14,7 @@ export const adminDataValidator: MicroValidator = ({ useForUpdate }) => {
         validateEmail({
           isOptional: true,
           uniqueConstraint: true,
-          useForPasswordReset: false,
+          useForPasswordResetOrUserVerification: false,
           useForUpdateByOtherUser: false
         }),
         validateChangePassword({ isOptional: true, useForUpdateByOtherUser: false })
@@ -30,7 +30,7 @@ export const adminOtherUserDataValidator = () => {
     validateEmail({
       isOptional: true,
       uniqueConstraint: true,
-      useForPasswordReset: false,
+      useForPasswordResetOrUserVerification: false,
       useForUpdateByOtherUser: true
     }),
     validateChangePassword({ isOptional: true, useForUpdateByOtherUser: true }),

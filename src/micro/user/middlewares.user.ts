@@ -25,11 +25,13 @@ export const userDataUpdateValidation: Array<ValidationChain[] | RequestHandler>
   validationReport
 ];
 
-export const userForgotPasswordRequestValidation: Array<ValidationChain[] | RequestHandler> = [
+export const userForgotPasswordRequestOrResendVerificationTokenValidation: Array<
+  ValidationChain[] | RequestHandler
+> = [
   validateEmail({
     isOptional: false,
     uniqueConstraint: false,
-    useForPasswordReset: true,
+    useForPasswordResetOrUserVerification: true,
     useForUpdateByOtherUser: false
   }),
   validationReport

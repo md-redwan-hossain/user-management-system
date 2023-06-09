@@ -1,5 +1,5 @@
 import { cookie } from "express-validator";
-import { UserTracking } from "../../micro/admin/models.admin.js";
+import { UserTracker } from "../../micro/admin/models.admin.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
 
 export const jwtInCookieValidator: MacroJwtValidator = ({ fieldName, skipisVerifiedChecking }) => {
@@ -27,7 +27,7 @@ export const jwtInCookieValidator: MacroJwtValidator = ({ fieldName, skipisVerif
       .custom(async (_, { req }) => {
         // skipisVerifiedChecking is applicable for /verify route
         if (skipisVerifiedChecking) return true;
-        const userStatus = await UserTracking.findOne({
+        const userStatus = await UserTracker.findOne({
           userId: req.res.locals.decodedJwt?.id
         });
 

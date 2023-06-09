@@ -33,12 +33,12 @@ declare global {
   type IdentityValidationChain = ({
     isOptional,
     uniqueConstraint,
-    useForPasswordReset,
+    useForPasswordResetOrUserVerification,
     useForUpdateByOtherUser
   }: {
     isOptional: boolean;
     uniqueConstraint: boolean;
-    useForPasswordReset: boolean;
+    useForPasswordResetOrUserVerification: boolean;
     useForUpdateByOtherUser: boolean;
   }) => ValidationChain[];
 

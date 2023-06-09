@@ -41,7 +41,7 @@ userRouter
 
 userRouter.post(
   "/forgot-password",
-  ...userMiddlewares.userForgotPasswordRequestValidation,
+  ...userMiddlewares.userForgotPasswordRequestOrResendVerificationTokenValidation,
   asyncErrorHandler(sendFortgotPasswordToken)
 );
 

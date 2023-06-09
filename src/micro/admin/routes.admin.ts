@@ -50,6 +50,7 @@ adminRouter
   .route("/verify")
   .get(
     ...roleGuardInCookieForVerifyRoute,
+    ...adminMiddlewares.adminForgotPasswordRequestOrResendVerificationTokenValidation,
     asyncErrorHandler(sendVerificationToken({ resend: true }))
   )
   .patch(
@@ -60,7 +61,7 @@ adminRouter
 
 adminRouter.post(
   "/forgot-password",
-  ...adminMiddlewares.adminForgotPasswordRequestValidation,
+  ...adminMiddlewares.adminForgotPasswordRequestOrResendVerificationTokenValidation,
   asyncErrorHandler(sendFortgotPasswordToken)
 );
 

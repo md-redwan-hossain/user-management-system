@@ -3,6 +3,6 @@ import { genericUserSchema } from "../admin/models.admin.js";
 
 const supportStuffSchema = new mongoose.Schema<IUser>();
 
-supportStuffSchema.add(genericUserSchema).add({ role: { type: String, default: "supportStuff" } });
+supportStuffSchema.add(genericUserSchema);
 
 export const SupportStuff = mongoose.model("SupportStuff", supportStuffSchema);

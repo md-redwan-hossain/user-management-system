@@ -1,9 +1,16 @@
 import express, { Application } from "express";
 import { Server } from "http";
+import httpTerminator from "lil-http-terminator";
 import mongoose from "mongoose";
 import * as macroErrorHandlers from "./macro/errorHandler.macro.js";
 import apiRouterV1 from "./macro/routes.macro.js";
-import { globalMiddlewares, initDatabase, serverPort } from "./macro/settings.macro.js";
+import {
+  globalMiddlewares,
+  initDatabase,
+  redisCache,
+  serverKiller,
+  serverPort
+} from "./macro/settings.macro.js";
 import { validationReport } from "./macro/utils/expressValidator.util.macro.js";
 import { updateRequestValidator } from "./macro/validators/global.validator.macro.js";
 
@@ -22,24 +29,40 @@ app.use(macroErrorHandlers.globalErrorHandler);
 // 404 response for non-existent endpoints
 app.all("*", macroErrorHandlers.nonExistenceRouteHandler);
 
-initDatabase()
-  .then(() => {
+(async () => {
+  try {
+    await initDatabase();
     const nodeWebServer: Server = app.listen(serverPort, async () => {
       console.log("Server is up");
     });
 
+    const terminator = httpTerminator({
+      server: nodeWebServer,
+      gracefulTerminationTimeout: 1000,
+      maxWaitTimeout: 30000
+    });
+
     process.on(
       "unhandledRejection",
-      macroErrorHandlers.uncaughtPromiseRejectionHandler(nodeWebServer)
+      macroErrorHandlers.uncaughtPromiseRejectionHandler(terminator)
     );
 
-    mongoose.connection.on("error", (err) => {
-      console.error(`Non-Initial DB Error --> ${err}`);
-      nodeWebServer.close(() => {
-        console.log("Server is closed");
-      });
+    await redisCache.connect();
+
+    redisCache.on("end", async () => {
+      console.log("Redis is down.");
+      serverKiller(terminator);
     });
-  })
-  .catch((err) => {
-    console.error(`Initial DB Error --> ${err}`);
-  });
+
+    mongoose.connection.on("disconnected", async () => {
+      console.error(`DB is down.`);
+      serverKiller(terminator);
+    });
+    mongoose.connection.on("error", async (err) => {
+      console.error(`Non-Initial DB Error --> ${err}`);
+      serverKiller(terminator);
+    });
+  } catch (err) {
+    console.error(`${err}`);
+  }
+})();

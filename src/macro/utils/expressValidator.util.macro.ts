@@ -4,7 +4,7 @@ import { Result, ValidationChain, body, matchedData, validationResult } from "ex
 export function validationReport(req: Request, res: Response, next: NextFunction): void {
   const errors: Result = validationResult(req);
   if (errors.isEmpty()) {
-    res.locals.validatedReqData = matchedData(req);
+    res.locals.validatedReqData = { ...res.locals.validatedReqData, ...matchedData(req) };
     next();
   } else {
     res.locals.isExpressValidatorError = true;

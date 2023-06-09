@@ -32,16 +32,22 @@ export const genericUserSchema = new mongoose.Schema<IUser>(
 
 const adminSchema = new mongoose.Schema<IUser>();
 
-adminSchema.add(genericUserSchema).add({ role: { type: String, default: "admin" } });
+adminSchema.add(genericUserSchema);
 
-const userTrackingSchema = new mongoose.Schema(
+const userTrackerSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      index: {
-        unique: true
-      }
+      unique: true
+    },
+    email: {
+      type: String,
+      required: [true, "An user must have a email."],
+      lowercase: true,
+      trim: true,
+      maxLength: 320,
+      unique: true
     },
     role: {
       type: String,
@@ -62,6 +68,6 @@ const userTrackingSchema = new mongoose.Schema(
   }
 );
 
-export const UserTracking = mongoose.model("UserTracking", userTrackingSchema);
+export const UserTracker = mongoose.model("UserTracker", userTrackerSchema);
 
 export const Admin = mongoose.model("Admin", adminSchema);

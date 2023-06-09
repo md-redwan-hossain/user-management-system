@@ -8,8 +8,8 @@ import {
   validateLoginCredentials
 } from "../../macro/validators/auth.validator.macro.js";
 import { jwtInCookieValidator } from "../../macro/validators/jwt.validator.macro.js";
-import { supportStuffDataValidator } from "./validators.supportStuff.js";
 import { adminOtherUserDataValidator } from "../admin/validators.admin.js";
+import { supportStuffDataValidator } from "./validators.supportStuff.js";
 
 export const supportStuffLoginDataValidation: Array<ValidationChain[] | RequestHandler> = [
   validateLoginCredentials(),
@@ -34,14 +34,15 @@ export const supportStuffForgotPasswordRequestValidation: Array<
   validateEmail({
     isOptional: false,
     uniqueConstraint: false,
-    useForPasswordReset: true,
+    useForPasswordResetOrUserVerification: true,
     useForUpdateByOtherUser: false
   }),
   validationReport
 ];
 
-export const supportStuffForgotPasswordTokenValidation: Array<ValidationChain[] | RequestHandler> =
-  [tokenFieldValidator({ tokenName: "forgotpasswordtoken" }), validationReport];
+export const supportStuffForgotPasswordRequestOrResendVerificationTokenValidation: Array<
+  ValidationChain[] | RequestHandler
+> = [tokenFieldValidator({ tokenName: "forgotpasswordtoken" }), validationReport];
 
 export const supportStuffResetPasswordValidation: Array<ValidationChain[] | RequestHandler> = [
   jwtInCookieValidator({ fieldName: "passwordResetToken", skipisVerifiedChecking: true }),

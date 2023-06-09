@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { ValidationChain, body, header } from "express-validator";
-import { UserTracking } from "../../micro/admin/models.admin.js";
+import { UserTracker } from "../../micro/admin/models.admin.js";
 import { dbModelDeterminer } from "../utils/dbQuery.utils.macro.js";
 import { makeFieldOptional } from "../utils/expressValidator.util.macro.js";
 import { verifyJwt } from "../utils/jwt.util.macro.js";
@@ -15,7 +15,7 @@ import {
 export const validateEmail: IdentityValidationChain = ({
   isOptional,
   uniqueConstraint,
-  useForPasswordReset,
+  useForPasswordResetOrUserVerification,
   useForUpdateByOtherUser
 }) => {
   return [
@@ -47,11 +47,11 @@ export const validateEmail: IdentityValidationChain = ({
       })
       .bail()
       .custom(async (emainInReq: string, { req }) => {
-        if (!useForPasswordReset) return true;
+        if (!useForPasswordResetOrUserVerification) return true;
         const retrievedUser = await req.res.locals.DbModel.findOne({ email: emainInReq });
         if (!retrievedUser) throw new Error("No user found with the given email");
 
-        const userStatus = await UserTracking.findOne({
+        const userStatus = await UserTracker.findOne({
           userId: retrievedUser._id
         });
         if (!userStatus?.isVerified) throw new Error("User is not verified");
@@ -196,7 +196,7 @@ export const validateSignUpCredentials = (): ValidationChain[] => {
     validateEmail({
       isOptional: false,
       uniqueConstraint: true,
-      useForPasswordReset: false,
+      useForPasswordResetOrUserVerification: false,
       useForUpdateByOtherUser: false
     })[0],
     validatePassword({ isOptional: false })[0]

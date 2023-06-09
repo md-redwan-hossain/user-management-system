@@ -23,4 +23,7 @@
 - `MONGODB_URL="mongodb://admin:admin@localhost:27020/ums"`
 
 - For running mongoDB in Docker, docker-compose file is added. Just run `docker compose up` inside project's root directory. Add -d flag to run in the background like `docker compose up -d`. In some system, `docker compose` is `docker-compose`.
+
+- For redis: `echo "vm.overcommit_memory = 1" | sudo tee -a /etc/sysctl.conf && sudo chown -R 1001:1001 ./redis_data`
+
 - postman api doc: https://documenter.getpostman.com/view/25816259/2s93sXdaFZ

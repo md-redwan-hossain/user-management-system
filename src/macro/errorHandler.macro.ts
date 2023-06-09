@@ -1,6 +1,7 @@
 import { ErrorRequestHandler, RequestHandler } from "express";
 import createError, { HttpError } from "http-errors";
 import { Server } from "node:http";
+import { serverKiller } from "./settings.macro.js";
 
 export function uncaughtExceptionHandler(err: Error): void {
   console.error(err);
@@ -9,13 +10,11 @@ export function uncaughtExceptionHandler(err: Error): void {
   process.exit(1);
 }
 
-export function uncaughtPromiseRejectionHandler(server: Server) {
-  return (err: Error): void => {
+export function uncaughtPromiseRejectionHandler(terminator) {
+  return async (err: Error) => {
     console.error(`A rejected promise is escaped: ${err}`);
     console.error(err);
-    server.close(() => {
-      console.log("Server is closed");
-    });
+    serverKiller(terminator);
   };
 }
 

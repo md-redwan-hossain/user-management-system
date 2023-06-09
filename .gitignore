@@ -2,5 +2,6 @@ node_modules
 .env
 dist
 mongo_data
+redis_data
 .idea
 .vscode
